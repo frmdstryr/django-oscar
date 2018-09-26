@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -8,6 +9,10 @@ class AbstractConfiguration(models.Model):
     """
     shop_name = models.CharField(max_length=64)
     shop_tagline = models.CharField(max_length=256)
+    shop_logo = models.ImageField(
+        upload_to=settings.OSCAR_PROMOTION_FOLDER,
+        default='img/ui/image_not_found.jpg',
+        max_length=255)
     homepage_url = models.CharField(max_length=256, default='/')
     
     #: Use css by default
@@ -59,6 +64,7 @@ class AbstractConfiguration(models.Model):
         return {
             'shop_name': self.shop_name,
             'shop_tagline': self.shop_tagline,
+            'shop_logo': self.shop_logo,
             'shop_date_format': self.shop_date_format,
             'shop_time_format': self.shop_time_format,
             'shop_datetime_format': self.shop_datetime_format,
