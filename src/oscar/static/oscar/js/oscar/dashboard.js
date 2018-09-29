@@ -40,6 +40,12 @@ var oscar = (function(o, $) {
                         {title: 'Subheading', block: 'h3'}
                     ],
                     toolbar: "styleselect | bold italic blockquote | bullist numlist | link"
+                },
+                'aceConfig': {
+                    mode: 'ace/mode/html',
+                    autoScrollEditorIntoView: true,
+                    maxLines: 30,
+                    minLines: 10
                 }
             };
             o.dashboard.options = $.extend(true, defaults, options);
@@ -82,6 +88,7 @@ var oscar = (function(o, $) {
             o.dashboard.initMasks(el);
             o.dashboard.initWYSIWYG(el);
             o.dashboard.initSelects(el);
+            o.dashboard.initEditor(el);
         },
         initMasks: function(el) {
             $(el).find(':input').inputmask();
@@ -172,6 +179,26 @@ var oscar = (function(o, $) {
             var $textareas = $(el).find('textarea').not('.no-widget-init textarea').not('.no-widget-init');
             $textareas.filter('form.wysiwyg textarea').tinymce(o.dashboard.options.tinyConfig);
             $textareas.filter('.wysiwyg').tinymce(o.dashboard.options.tinyConfig);
+        },
+        initEditor: function(el) {
+            // Use Ace by default
+            var $textareas = $(el).find('textarea').not('.no-editor-init textarea').not('.no-editor-init');
+            var aceInit = function(i, e) {
+                // Add a div before the textarea
+                var textarea = $(e);
+                var div = $('<div>', {'class': 'form-control'}).insertBefore(textarea);
+                var editor = ace.edit(div[0], o.dashboard.options.aceConfig);
+                
+                // Sync all editor changes to the textarea
+                editor.getSession().setValue(textarea.val());
+                editor.getSession().on('change', function(){
+                    textarea.val(editor.getSession().getValue());
+                });
+                // Hide the textarea
+                textarea.hide();
+            }
+            $.each($textareas.filter('form.ace-editor textarea'), aceInit);;
+            $.each($textareas.filter('.ace-editor'), aceInit);
         },
         initForms: function() {
             // Disable buttons when they are clicked and show a "loading" message taken from the

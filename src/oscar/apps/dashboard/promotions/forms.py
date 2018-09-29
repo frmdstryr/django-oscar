@@ -26,6 +26,10 @@ class RawHTMLForm(forms.ModelForm):
         model = RawHTML
         fields = ['name', 'body']
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['body'].widget.attrs['class'] = "no-widget-init ace-editor"
+
 
 class SingleProductForm(forms.ModelForm):
     class Meta:
