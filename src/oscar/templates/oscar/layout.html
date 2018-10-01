@@ -19,7 +19,9 @@
 
 {% block layout %}
     {# Top-horizontal bar with account, notifictions, dashboard links #}
+    {% block accounts_wrapper %}
     {% include "partials/nav_accounts.html" %}
+    {% endblock %}
 
     {# Site logo/title, mini-basket, browse dropdown and searchbox #}
     {% block navigation_wrapper %}

@@ -5,7 +5,9 @@
 
 {% block layout %}
     {# Top-horizontal bar with account, notifictions, dashboard links #}
+    {% block accounts_wrapper %}
     {% include "partials/nav_accounts.html" %}
+    {% endblock %}
 
     {# Render promotions #}
     <div id="promotions">
