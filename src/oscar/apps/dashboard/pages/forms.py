@@ -39,6 +39,7 @@ class PageUpdateForm(forms.ModelForm):
     template_name = forms.CharField(
         widget=forms.Select(choices=settings.OSCAR_PAGE_TEMPLATES),
         label=_("Template"),
+        required=False,
         help_text=_("Template to use for this page"))
     
     def clean_url(self):
