@@ -22,6 +22,7 @@
     {% include "partials/nav_accounts.html" %}
 
     {# Site logo/title, mini-basket, browse dropdown and searchbox #}
+    {% block navigation_wrapper %}
     <header class="header container-fluid">
         <div class="page_inner">
             <div class="row">
@@ -34,6 +35,7 @@
             {% include "partials/nav_primary.html" %}
         {% endblock %}
     </header>
+    {% endblock navigation_wrapper %}
 
     {# Main content of page - other layout templates may override this block #}
     {% block content_wrapper %}
@@ -59,6 +61,13 @@
 
                     {# Div exists for AJAX updates to entire content section #}
                     <div id="content_inner">{% block content %}{% endblock %}</div>
+                    
+                    {# Render promotions #}
+                    <div id="promotions_bottom">
+                        {% for promotion in promotions_bottom %}
+                            {% render_promotion promotion %}
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
         </div>

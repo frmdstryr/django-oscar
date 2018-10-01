@@ -33,6 +33,13 @@
                     </div>
 
                     {% block content %}{% endblock %}
+                    
+                    {# Render promotions #}
+                    <div id="promotions_bottom">
+                        {% for promotion in promotions_bottom %}
+                            {% render_promotion promotion %}
+                        {% endfor %}
+                    </div>
                 </div>
 
                 <aside class="col-sm-3">

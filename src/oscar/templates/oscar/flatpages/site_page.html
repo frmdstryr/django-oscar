@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+{% load i18n %}
+{% load staticfiles %}
+{% load promotion_tags %}
+
+{% block layout %}
+    {# Top-horizontal bar with account, notifictions, dashboard links #}
+    {% include "partials/nav_accounts.html" %}
+
+    {# Render promotions #}
+    <div id="promotions">
+        {% for promotion in promotions_page %}
+            {% render_promotion promotion %}
+        {% endfor %}
+    </div>
+     
+     <article>{{ flatpage.content }}</article>
+     
+     {# Render promotions #}
+     <div id="promotions_bottom">
+        {% for promotion in promotions_bottom %}
+            {% render_promotion promotion %}
+        {% endfor %}
+     </div>
+
+    {% include "partials/footer.html" %}
+{% endblock layout %}

@@ -1,4 +1,5 @@
 from django import forms
+from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
@@ -35,7 +36,11 @@ class PageUpdateForm(forms.ModelForm):
             ),
         },
     )
-
+    template_name = forms.CharField(
+        widget=forms.Select(choices=settings.OSCAR_PAGE_TEMPLATES),
+        label=_("Template"),
+        help_text=_("Template to use for this page"))
+    
     def clean_url(self):
         """
         Validate the input for field *url* checking if the specified
@@ -53,4 +58,4 @@ class PageUpdateForm(forms.ModelForm):
 
     class Meta:
         model = FlatPage
-        fields = ('title', 'url', 'content')
+        fields = ('title', 'url', 'template_name', 'content')

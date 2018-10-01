@@ -55,9 +55,21 @@ OSCAR_DASHBOARD_ITEMS_PER_PAGE = 20
 OSCAR_ALLOW_ANON_CHECKOUT = False
 
 # Promotions
-OSCAR_PROMOTION_POSITIONS = (('page', 'Page'),
+OSCAR_PROMOTION_POSITIONS = (('page', 'Top of page'),
                              ('right', 'Right-hand sidebar'),
-                             ('left', 'Left-hand sidebar'))
+                             ('left', 'Left-hand sidebar'),
+                             ('bottom', 'Bottom of page'),)
+
+# Page templates
+OSCAR_PAGE_TEMPLATES = (
+    ('', 'Shop page'),
+    ('flatpages/shop_no_nav.html', 'Shop page without nav bar'),
+    ('flatpages/shop_left_bar.html', 'Shop page with side bar'),
+    ('flatpages/shop_left_bar_no_nav.html', 'Shop page with side bar and no nav bar'),
+    ('flatpages/shop_left_right_bars.html', 'Shop page with left and right bars'),
+    ('flatpages/shop_left_right_bars_no_nav.html', 'Shop page with side bars and no nav bar'),
+    ('flatpages/site_page.html', 'Full width site page'),
+)
 
 # Reviews
 OSCAR_ALLOW_ANON_REVIEWS = True
