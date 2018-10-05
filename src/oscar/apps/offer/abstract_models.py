@@ -21,13 +21,14 @@ from oscar.core.loading import get_class, get_classes, get_model
 from oscar.models import fields
 from oscar.templatetags.currency_filters import currency
 
+Model = get_class('core.models', 'Model')
 ActiveOfferManager, BrowsableRangeManager \
     = get_classes('offer.managers', ['ActiveOfferManager', 'BrowsableRangeManager'])
 ZERO_DISCOUNT = get_class('offer.results', 'ZERO_DISCOUNT')
 load_proxy, unit_price = get_classes('offer.utils', ['load_proxy', 'unit_price'])
 
 
-class BaseOfferMixin(models.Model):
+class BaseOfferMixin(Model):
     class Meta:
         abstract = True
 
@@ -80,7 +81,7 @@ class BaseOfferMixin(models.Model):
         return self.name
 
 
-class AbstractConditionalOffer(models.Model):
+class AbstractConditionalOffer(Model):
     """
     A conditional offer (eg buy 1, get 10% off)
     """
@@ -445,7 +446,7 @@ class AbstractConditionalOffer(models.Model):
             structure=Product.CHILD)
 
 
-class AbstractBenefit(BaseOfferMixin, models.Model):
+class AbstractBenefit(BaseOfferMixin, Model):
     range = models.ForeignKey(
         'offer.Range',
         blank=True,
@@ -669,7 +670,7 @@ class AbstractBenefit(BaseOfferMixin, models.Model):
         return D('0.00')
 
 
-class AbstractCondition(BaseOfferMixin, models.Model):
+class AbstractCondition(BaseOfferMixin, Model):
     """
     A condition for an offer to be applied. You can either specify a custom
     proxy class, or need to specify a type, range and value.
@@ -764,7 +765,7 @@ class AbstractCondition(BaseOfferMixin, models.Model):
         return sorted(line_tuples, key=key)
 
 
-class AbstractRange(models.Model):
+class AbstractRange(Model):
     """
     Represents a range of products that can be used within an offer.
 
@@ -1027,7 +1028,7 @@ class AbstractRange(models.Model):
         return len(self._class_ids()) == 0 and len(self._included_categories()) == 0
 
 
-class AbstractRangeProduct(models.Model):
+class AbstractRangeProduct(Model):
     """
     Allow ordering products inside ranges
     Exists to allow customising.
@@ -1042,7 +1043,7 @@ class AbstractRangeProduct(models.Model):
         unique_together = ('range', 'product')
 
 
-class AbstractRangeProductFileUpload(models.Model):
+class AbstractRangeProductFileUpload(Model):
     range = models.ForeignKey(
         'offer.Range',
         on_delete=models.CASCADE,

@@ -14,6 +14,7 @@ from oscar.core.loading import get_class
 from oscar.models.fields import AutoSlugField
 
 
+Model = get_class('core.models', 'Model')
 CommunicationTypeManager = get_class('customer.managers', 'CommunicationTypeManager')
 
 
@@ -46,7 +47,8 @@ class UserManager(auth_models.BaseUserManager):
         return u
 
 
-class AbstractUser(auth_models.AbstractBaseUser,
+class AbstractUser(Model,
+                   auth_models.AbstractBaseUser,
                    auth_models.PermissionsMixin):
     """
     An abstract base user suitable for use in Oscar projects.
@@ -105,7 +107,7 @@ class AbstractUser(auth_models.AbstractBaseUser,
         self._migrate_alerts_to_user()
 
 
-class AbstractEmail(models.Model):
+class AbstractEmail(Model):
     """
     This is a record of all emails sent to a customer.
     Normally, we only record order-related emails.
@@ -137,7 +139,7 @@ class AbstractEmail(models.Model):
                 'email': self.email, 'subject': self.subject}
 
 
-class AbstractCommunicationEventType(models.Model):
+class AbstractCommunicationEventType(Model):
     """
     A 'type' of communication.  Like an order confirmation email.
     """
@@ -261,7 +263,7 @@ class AbstractCommunicationEventType(models.Model):
         return self.category == self.USER_RELATED
 
 
-class AbstractNotification(models.Model):
+class AbstractNotification(Model):
     recipient = models.ForeignKey(
         AUTH_USER_MODEL,
         db_index=True,
@@ -312,7 +314,7 @@ class AbstractNotification(models.Model):
         return self.date_read is not None
 
 
-class AbstractProductAlert(models.Model):
+class AbstractProductAlert(Model):
     """
     An alert for when a product comes back in stock
     """

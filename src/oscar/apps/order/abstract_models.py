@@ -17,17 +17,18 @@ from django.utils.translation import pgettext_lazy
 from oscar.apps.order.signals import (
     order_line_status_changed, order_status_changed)
 from oscar.core.compat import AUTH_USER_MODEL
-from oscar.core.loading import get_model
+from oscar.core.loading import get_model, get_class
 from oscar.core.utils import get_default_currency
 from oscar.models.fields import AutoSlugField
 
 from . import exceptions
 
 
+Model = get_class('core.models', 'Model')
 logger = logging.getLogger('oscar.order')
 
 
-class AbstractOrder(models.Model):
+class AbstractOrder(Model):
     """
     The main order model
     """
@@ -388,7 +389,7 @@ class AbstractOrder(models.Model):
         super().save(*args, **kwargs)
 
 
-class AbstractOrderNote(models.Model):
+class AbstractOrderNote(Model):
     """
     A note against an order.
 
@@ -436,7 +437,7 @@ class AbstractOrderNote(models.Model):
         return delta.seconds < self.editable_lifetime
 
 
-class AbstractOrderStatusChange(models.Model):
+class AbstractOrderStatusChange(Model):
     order = models.ForeignKey(
         'order.Order',
         on_delete=models.CASCADE,
@@ -460,7 +461,7 @@ class AbstractOrderStatusChange(models.Model):
         )
 
 
-class AbstractCommunicationEvent(models.Model):
+class AbstractCommunicationEvent(Model):
     """
     An order-level event involving a communication to the customer, such
     as an confirmation email being sent.
@@ -491,7 +492,7 @@ class AbstractCommunicationEvent(models.Model):
 # LINES
 
 
-class AbstractLine(models.Model):
+class AbstractLine(Model):
     """
     An order line
     """
@@ -825,7 +826,7 @@ class AbstractLine(models.Model):
         return True, None
 
 
-class AbstractLineAttribute(models.Model):
+class AbstractLineAttribute(Model):
     """
     An attribute of a line
     """
@@ -850,7 +851,7 @@ class AbstractLineAttribute(models.Model):
         return "%s = %s" % (self.type, self.value)
 
 
-class AbstractLinePrice(models.Model):
+class AbstractLinePrice(Model):
     """
     For tracking the prices paid for each unit within a line.
 
@@ -895,7 +896,7 @@ class AbstractLinePrice(models.Model):
 # PAYMENT EVENTS
 
 
-class AbstractPaymentEventType(models.Model):
+class AbstractPaymentEventType(Model):
     """
     Payment event types are things like 'Paid', 'Failed', 'Refunded'.
 
@@ -916,7 +917,7 @@ class AbstractPaymentEventType(models.Model):
         return self.name
 
 
-class AbstractPaymentEvent(models.Model):
+class AbstractPaymentEvent(Model):
     """
     A payment event for an order
 
@@ -967,7 +968,7 @@ class AbstractPaymentEvent(models.Model):
         return self.lines.all().count()
 
 
-class PaymentEventQuantity(models.Model):
+class PaymentEventQuantity(Model):
     """
     A "through" model linking lines to payment events
     """
@@ -993,7 +994,7 @@ class PaymentEventQuantity(models.Model):
 # SHIPPING EVENTS
 
 
-class AbstractShippingEvent(models.Model):
+class AbstractShippingEvent(Model):
     """
     An event is something which happens to a group of lines such as
     1 item being dispatched.
@@ -1032,7 +1033,7 @@ class AbstractShippingEvent(models.Model):
         return self.lines.count()
 
 
-class ShippingEventQuantity(models.Model):
+class ShippingEventQuantity(Model):
     """
     A "through" model linking lines to shipping events.
 
@@ -1073,7 +1074,7 @@ class ShippingEventQuantity(models.Model):
             'qty': self.quantity}
 
 
-class AbstractShippingEventType(models.Model):
+class AbstractShippingEventType(Model):
     """
     A type of shipping/fulfillment event
 
@@ -1099,7 +1100,7 @@ class AbstractShippingEventType(models.Model):
 # DISCOUNTS
 
 
-class AbstractOrderDiscount(models.Model):
+class AbstractOrderDiscount(Model):
     """
     A discount against an order.
 

@@ -4,9 +4,11 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from oscar.core.compat import AUTH_USER_MODEL
+from oscar.core.loading import get_class
+Model = get_class('core.models', 'Model')
 
 
-class AbstractProductRecord(models.Model):
+class AbstractProductRecord(Model):
     """
     A record of a how popular a product is.
 
@@ -39,7 +41,7 @@ class AbstractProductRecord(models.Model):
         return _("Record for '%s'") % self.product
 
 
-class AbstractUserRecord(models.Model):
+class AbstractUserRecord(Model):
     """
     A record of a user's activity.
     """
@@ -72,7 +74,7 @@ class AbstractUserRecord(models.Model):
         verbose_name_plural = _('User records')
 
 
-class AbstractUserProductView(models.Model):
+class AbstractUserProductView(Model):
 
     user = models.ForeignKey(
         AUTH_USER_MODEL, verbose_name=_("User"),
@@ -94,7 +96,7 @@ class AbstractUserProductView(models.Model):
             'user': self.user, 'product': self.product}
 
 
-class AbstractUserSearch(models.Model):
+class AbstractUserSearch(Model):
 
     user = models.ForeignKey(
         AUTH_USER_MODEL,

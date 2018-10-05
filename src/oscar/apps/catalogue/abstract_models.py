@@ -26,6 +26,7 @@ from oscar.core.validators import non_python_keyword
 from oscar.models.fields import AutoSlugField, NullCharField
 from oscar.models.fields.slugfield import SlugField
 
+Model = get_class('core.models', 'Model')
 BrowsableProductManager = get_class('catalogue.managers', 'BrowsableProductManager')
 ProductQuerySet = get_class('catalogue.managers', 'ProductQuerySet')
 ProductAttributesContainer = get_class(
@@ -33,7 +34,7 @@ ProductAttributesContainer = get_class(
 Selector = get_class('partner.strategy', 'Selector')
 
 
-class AbstractProductClass(models.Model):
+class AbstractProductClass(Model):
     """
     Used for defining options and attributes for a subset of products.
     E.g. Books, DVDs and Toys. A product can only belong to one product class.
@@ -201,7 +202,7 @@ class AbstractCategory(MP_Node):
         return self.get_children().count()
 
 
-class AbstractProductCategory(models.Model):
+class AbstractProductCategory(Model):
     """
     Joining model between products and categories. Exists to allow customising.
     """
@@ -226,7 +227,7 @@ class AbstractProductCategory(models.Model):
         return "<productcategory for product '%s'>" % self.product
 
 
-class AbstractProduct(models.Model):
+class AbstractProduct(Model):
     """
     The base product object
 
@@ -653,7 +654,7 @@ class AbstractProduct(models.Model):
                                               .select_related('recommendation').all()]
 
 
-class AbstractProductRecommendation(models.Model):
+class AbstractProductRecommendation(Model):
     """
     'Through' model for product recommendations
     """
@@ -680,7 +681,7 @@ class AbstractProductRecommendation(models.Model):
         verbose_name_plural = _('Product recomendations')
 
 
-class AbstractProductAttribute(models.Model):
+class AbstractProductAttribute(Model):
     """
     Defines an attribute for a product class. (For example, number_of_pages for
     a 'book' class)
@@ -863,7 +864,7 @@ class AbstractProductAttribute(models.Model):
             raise ValidationError(_("Must be a boolean"))
 
     def _validate_entity(self, value):
-        if not isinstance(value, models.Model):
+        if not isinstance(value, Model):
             raise ValidationError(_("Must be a model instance"))
 
     def _validate_multi_option(self, value):
@@ -899,7 +900,7 @@ class AbstractProductAttribute(models.Model):
     _validate_image = _validate_file
 
 
-class AbstractProductAttributeValue(models.Model):
+class AbstractProductAttributeValue(Model):
     """
     The "through" model for the m2m relationship between catalogue.Product and
     catalogue.ProductAttribute.  This specifies the value of the attribute for
@@ -1032,7 +1033,7 @@ class AbstractProductAttributeValue(models.Model):
         return mark_safe(self.value)
 
 
-class AbstractAttributeOptionGroup(models.Model):
+class AbstractAttributeOptionGroup(Model):
     """
     Defines a group of options that collectively may be used as an
     attribute type
@@ -1056,7 +1057,7 @@ class AbstractAttributeOptionGroup(models.Model):
         return ", ".join(options)
 
 
-class AbstractAttributeOption(models.Model):
+class AbstractAttributeOption(Model):
     """
     Provides an option within an option group for an attribute type
     Examples: In a Language group, English, Greek, French
@@ -1079,7 +1080,7 @@ class AbstractAttributeOption(models.Model):
         verbose_name_plural = _('Attribute options')
 
 
-class AbstractOption(models.Model):
+class AbstractOption(Model):
     """
     An option that can be selected for a particular item when the product
     is added to the basket.
@@ -1160,7 +1161,7 @@ class MissingProductImage(object):
                                            settings.MEDIA_ROOT))
 
 
-class AbstractProductImage(models.Model):
+class AbstractProductImage(Model):
     """
     An image of a product
     """

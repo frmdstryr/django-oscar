@@ -15,13 +15,14 @@ from oscar.core.utils import get_default_currency
 from oscar.models.fields.slugfield import SlugField
 from oscar.templatetags.currency_filters import currency
 
+Model = get_class('core.models', 'Model')
 OfferApplications = get_class('offer.results', 'OfferApplications')
 Unavailable = get_class('partner.availability', 'Unavailable')
 LineOfferConsumer = get_class('basket.utils', 'LineOfferConsumer')
 OpenBasketManager, SavedBasketManager = get_classes('basket.managers', ['OpenBasketManager', 'SavedBasketManager'])
 
 
-class AbstractBasket(models.Model):
+class AbstractBasket(Model):
     """
     Basket object
     """
@@ -584,7 +585,7 @@ class AbstractBasket(models.Model):
             return 0
 
 
-class AbstractLine(models.Model):
+class AbstractLine(Model):
     """A line of a basket (product and a quantity)
 
     Common approaches on ordering basket lines:
@@ -913,7 +914,7 @@ class AbstractLine(models.Model):
                 return warning % product_prices
 
 
-class AbstractLineAttribute(models.Model):
+class AbstractLineAttribute(Model):
     """
     An attribute of a basket line
     """

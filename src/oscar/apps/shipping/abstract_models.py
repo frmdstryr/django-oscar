@@ -8,10 +8,12 @@ from django.utils.translation import gettext_lazy as _
 from oscar.core import loading, prices
 from oscar.models.fields import AutoSlugField
 
+
+Model = loading.get_class('core.models', 'Model')
 Scale = loading.get_class('shipping.scales', 'Scale')
 
 
-class AbstractBase(models.Model):
+class AbstractBase(Model):
     """
     Implements the interface declared by shipping.base.Base
     """
@@ -184,7 +186,7 @@ class AbstractWeightBased(AbstractBase):
             return None
 
 
-class AbstractWeightBand(models.Model):
+class AbstractWeightBand(Model):
     """
     Represents a weight band which are used by the WeightBasedShipping method.
     """

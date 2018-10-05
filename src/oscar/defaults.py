@@ -1,3 +1,4 @@
+import os
 from collections import OrderedDict
 
 from django.urls import reverse_lazy
@@ -270,3 +271,12 @@ OSCAR_SEARCH_FACETS = {
 
 OSCAR_PROMOTIONS_ENABLED = True
 OSCAR_PRODUCT_SEARCH_HANDLER = None
+
+# Stripe
+STRIPE_ENABLED = False
+STRIPE_CONNECT_CLIENT_ID = os.environ.get('STRIPE_CONNECT_CLIENT_ID')
+STRIPE_CONNECT_MAX_AGE = 24*60*60
+STRIPE_CONNECT_REDIRECT_URL = '/api/partner/connect/'
+STRIPE_CONNECT_URL = 'https://connect.stripe.com/express/oauth/authorize'
+STRIPE_PUBLIC_KEY = os.environ.get('STRIPE_PUBLIC_KEY')
+STRIPE_PRIVATE_KEY = os.environ.get('STRIPE_PRIVATE_KEY')

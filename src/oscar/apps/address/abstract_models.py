@@ -9,10 +9,13 @@ from django.utils.translation import pgettext_lazy
 from phonenumber_field.modelfields import PhoneNumberField
 
 from oscar.core.compat import AUTH_USER_MODEL
+from oscar.core.loading import get_class
 from oscar.models.fields import UppercaseCharField
 
+Model = get_class('core.models', 'Model')
 
-class AbstractAddress(models.Model):
+
+class AbstractAddress(Model):
     """
     Superclass address object
 
@@ -397,7 +400,7 @@ class AbstractAddress(models.Model):
         return self.get_address_field_values(self.base_fields)
 
 
-class AbstractCountry(models.Model):
+class AbstractCountry(Model):
     """
     International Organization for Standardization (ISO) 3166-1 Country list.
 

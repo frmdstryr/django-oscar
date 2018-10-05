@@ -8,10 +8,13 @@ from django.utils.translation import gettext_lazy as _
 
 from oscar.apps.voucher.utils import get_unused_code
 from oscar.core.compat import AUTH_USER_MODEL
-from oscar.core.loading import get_model
+from oscar.core.loading import get_model, get_class
 
 
-class AbstractVoucherSet(models.Model):
+Model = get_class('core.models', 'Model')
+
+
+class AbstractVoucherSet(Model):
     """A collection of vouchers (potentially auto-generated)
 
     a VoucherSet is a group of voucher that are generated
@@ -107,7 +110,7 @@ class AbstractVoucherSet(models.Model):
         return value['result']
 
 
-class AbstractVoucher(models.Model):
+class AbstractVoucher(Model):
     """
     A voucher.  This is simply a link to a collection of offers.
 
@@ -250,7 +253,7 @@ class AbstractVoucher(models.Model):
         return self.offers.all()[0].benefit
 
 
-class AbstractVoucherApplication(models.Model):
+class AbstractVoucherApplication(Model):
     """
     For tracking how often a voucher has been used in an order.
 

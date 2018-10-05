@@ -11,10 +11,11 @@ from oscar.core.compat import AUTH_USER_MODEL
 from oscar.core.loading import get_class
 
 
+Model = get_class('core.models', 'Model')
 ProductReviewQuerySet = get_class('catalogue.reviews.managers', 'ProductReviewQuerySet')
 
 
-class AbstractProductReview(models.Model):
+class AbstractProductReview(Model):
     """
     A review of a product
 
@@ -179,7 +180,7 @@ class AbstractProductReview(models.Model):
         return True, ""
 
 
-class AbstractVote(models.Model):
+class AbstractVote(Model):
     """
     Records user ratings as yes/no vote.
 

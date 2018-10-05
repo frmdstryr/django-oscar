@@ -5,9 +5,13 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
 from oscar.core.compat import AUTH_USER_MODEL
+from oscar.core.loading import get_class
 
 
-class AbstractWishList(models.Model):
+Model = get_class('core.models', 'Model')
+
+
+class AbstractWishList(Model):
     """
     Represents a user's wish lists of products.
 
@@ -102,7 +106,7 @@ class AbstractWishList(models.Model):
             line.save()
 
 
-class AbstractLine(models.Model):
+class AbstractLine(Model):
     """
     One entry in a wish list. Similar to order lines or basket lines.
     """

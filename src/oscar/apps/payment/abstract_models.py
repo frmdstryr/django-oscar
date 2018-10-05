@@ -4,6 +4,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from oscar.core.compat import AUTH_USER_MODEL
+from oscar.core.loading import get_class
 from oscar.core.utils import get_default_currency
 from oscar.models.fields import AutoSlugField
 from oscar.templatetags.currency_filters import currency
@@ -11,7 +12,10 @@ from oscar.templatetags.currency_filters import currency
 from . import bankcards
 
 
-class AbstractTransaction(models.Model):
+Model = get_class('core.models', 'Model')
+
+
+class AbstractTransaction(Model):
     """
     A transaction for a particular payment source.
 
@@ -54,7 +58,7 @@ class AbstractTransaction(models.Model):
         verbose_name_plural = _("Transactions")
 
 
-class AbstractSource(models.Model):
+class AbstractSource(Model):
     """
     A source of payment for an order.
 
@@ -198,7 +202,7 @@ class AbstractSource(models.Model):
         return self.amount_debited - self.amount_refunded
 
 
-class AbstractSourceType(models.Model):
+class AbstractSourceType(Model):
     """
     A type of payment source.
 
@@ -220,7 +224,7 @@ class AbstractSourceType(models.Model):
         return self.name
 
 
-class AbstractBankcard(models.Model):
+class AbstractBankcard(Model):
     """
     Model representing a user's bankcard.  This is used for two purposes:
 
