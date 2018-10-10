@@ -23,7 +23,7 @@ RelatedFieldWidgetWrapper = get_class('dashboard.widgets',
 
 CategoryForm = movenodeform_factory(
     Category,
-    fields=['name', 'description', 'image'])
+    fields=['name', 'description', 'image', 'is_enabled'])
 
 
 class ProductClassSelectForm(forms.Form):
