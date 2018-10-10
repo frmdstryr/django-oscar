@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.core.paginator import InvalidPage
 from django.core.exceptions import SuspiciousOperation
-from django.http import HttpResponsePermanentRedirect
+from django.http import HttpResponsePermanentRedirect, Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.http import urlquote
 from django.utils.translation import gettext_lazy as _
@@ -172,8 +172,11 @@ class ProductCategoryView(TemplateView):
         return super().get(request, *args, **kwargs)
 
     def get_category(self):
-        return get_object_or_404(
+        category = get_object_or_404(
             Category, pk=self.kwargs['pk'], is_enabled=True)
+        if category.is_disabled():
+            raise Http404() 
+        return category
 
     def redirect_if_necessary(self, current_path, category):
         if self.enforce_paths:
