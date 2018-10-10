@@ -34,6 +34,10 @@ def get_annotated_list(depth=None, parent=None):
             start_depth = node_depth
         if max_depth is not None and node_depth > max_depth:
             continue
+        
+        # If this node or any parent nodes are not enabled skip this node
+        if node.is_disabled():
+            continue
 
         # Update previous node's info
         info['has_children'] = prev_depth is None or node_depth > prev_depth

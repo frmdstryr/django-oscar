@@ -90,12 +90,15 @@ class AbstractCategory(MP_Node):
     #: When the Category model is overwriten to provide CMS content, defining
     #: this avoids fetching a lot of unneeded extra data from the database.
     COMPARISON_FIELDS = ('pk', 'path', 'depth')
-
+    
     name = models.CharField(_('Name'), max_length=255, db_index=True)
     description = models.TextField(_('Description'), blank=True)
     image = models.ImageField(_('Image'), upload_to='categories', blank=True,
                               null=True, max_length=255)
     slug = SlugField(_('Slug'), max_length=255, db_index=True)
+    is_enabled = models.BooleanField(
+        default=True, help_text=_('If this is unchecked, this category will '
+                                  'not be visible on the site.'))
 
     _slug_separator = '/'
     _full_name_separator = ' > '
@@ -200,6 +203,17 @@ class AbstractCategory(MP_Node):
 
     def get_num_children(self):
         return self.get_children().count()
+    
+    def is_disabled(self):
+        """ Check if this node or any parents of this node have is_enabled 
+        set to False.
+        """
+        node = self
+        while node is not None:
+            if not node.is_enabled:
+                return True
+            node = node.get_parent()
+        return False
 
 
 class AbstractProductCategory(Model):

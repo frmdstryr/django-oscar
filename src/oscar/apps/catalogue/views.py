@@ -172,7 +172,8 @@ class ProductCategoryView(TemplateView):
         return super().get(request, *args, **kwargs)
 
     def get_category(self):
-        return get_object_or_404(Category, pk=self.kwargs['pk'])
+        return get_object_or_404(
+            Category, pk=self.kwargs['pk'], is_enabled=True)
 
     def redirect_if_necessary(self, current_path, category):
         if self.enforce_paths:
