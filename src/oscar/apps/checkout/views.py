@@ -13,11 +13,14 @@ from oscar.core.loading import get_class, get_classes, get_model
 
 from . import signals
 
-ShippingAddressForm, ShippingMethodForm, GatewayForm \
-    = get_classes('checkout.forms', ['ShippingAddressForm', 'ShippingMethodForm', 'GatewayForm'])
+ShippingAddressForm, ShippingMethodForm, PaymentMethodForm, GatewayForm \
+    = get_classes('checkout.forms', ['ShippingAddressForm',
+                                     'ShippingMethodForm',
+                                     'PaymentMethodForm',
+                                     'GatewayForm'])
 OrderCreator = get_class('order.utils', 'OrderCreator')
 UserAddressForm = get_class('address.forms', 'UserAddressForm')
-Repository = get_class('shipping.repository', 'Repository')
+ShippingRepository = get_class('shipping.repository', 'Repository')
 AccountAuthView = get_class('customer.views', 'AccountAuthView')
 RedirectRequired, UnableToTakePayment, PaymentError \
     = get_classes('payment.exceptions', ['RedirectRequired',
@@ -30,6 +33,7 @@ NoShippingRequired = get_class('shipping.methods', 'NoShippingRequired')
 Order = get_model('order', 'Order')
 ShippingAddress = get_model('order', 'ShippingAddress')
 CommunicationEvent = get_model('order', 'CommunicationEvent')
+PaymentRepository = get_class('payment.repository', 'Repository')
 PaymentEventType = get_model('order', 'PaymentEventType')
 PaymentEvent = get_model('order', 'PaymentEvent')
 UserAddress = get_model('address', 'UserAddress')
@@ -311,7 +315,7 @@ class ShippingMethodView(CheckoutSessionMixin, generic.FormView):
         # and the shipping address (so we pass all these things to the
         # repository).  I haven't come across a scenario that doesn't fit this
         # system.
-        return Repository().get_shipping_methods(
+        return ShippingRepository().get_shipping_methods(
             basket=self.request.basket, user=self.request.user,
             shipping_addr=self.get_shipping_address(self.request.basket),
             request=self.request)
@@ -336,7 +340,7 @@ class ShippingMethodView(CheckoutSessionMixin, generic.FormView):
 # ==============
 
 
-class PaymentMethodView(CheckoutSessionMixin, generic.TemplateView):
+class PaymentMethodView(CheckoutSessionMixin, generic.FormView):
     """
     View for a user to choose which payment method(s) they want to use.
 
@@ -344,6 +348,8 @@ class PaymentMethodView(CheckoutSessionMixin, generic.TemplateView):
     between multiple sources. It's not the place for entering sensitive details
     like bankcard numbers though - that belongs on the payment details view.
     """
+    template_name = 'checkout/payment_methods.html'
+    form_class = PaymentMethodForm
     pre_conditions = [
         'check_basket_is_not_empty',
         'check_basket_is_valid',
@@ -352,11 +358,61 @@ class PaymentMethodView(CheckoutSessionMixin, generic.TemplateView):
     skip_conditions = ['skip_unless_payment_is_required']
     success_url = reverse_lazy('checkout:payment-details')
 
+    def post(self, request, *args, **kwargs):
+        self._methods = self.get_available_payment_methods()
+        return super().post(request, *args, **kwargs)
+
     def get(self, request, *args, **kwargs):
-        # By default we redirect straight onto the payment details view. Shops
-        # that require a choice of payment method may want to override this
-        # method to implement their specific logic.
+        # Save payment methods as instance var as we need them both here
+        # and when setting the context vars.
+        self._methods = self.get_available_payment_methods()
+        if len(self._methods) == 0:
+            # No shipping methods available for given address
+            messages.warning(request, _(
+                "Payment methods are unavailable for your items, please "
+                "contact support"))
+            return redirect('checkout:shipping-address')
+        elif len(self._methods) == 1:
+            # Only one payment method - set this and redirect onto the next
+            # step
+            self.checkout_session.pay_by(self._methods[0].code)
+            return self.get_success_response()
+
+        # Must be more than one available shipping method, we present them to
+        # the user to make a choice.
+        return super().get(self, request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        kwargs = super().get_context_data(**kwargs)
+        kwargs['methods'] = self._methods
+        return kwargs
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['methods'] = self._methods
+        return kwargs
+
+    def get_available_payment_methods(self):
+        """
+        Returns all applicable payment method objects for a given basket.
+        """
+        basket = self.request.basket
+        order_total = self.get_order_totals_with_shipping(basket)
+        return PaymentRepository().get_payment_methods(
+            basket=basket, user=self.request.user, order_total=order_total,
+            request=self.request)
+    
+    def form_valid(self, form):
+        # Save the code for the chosen shipping method in the session
+        # and continue to the next step.
+        self.checkout_session.pay_by(
+            form.cleaned_data['method_code'])
         return self.get_success_response()
+
+    def form_invalid(self, form):
+        messages.error(self.request, _("Your submitted payment method is not"
+                                       " permitted"))
+        return super().form_invalid(form)
 
     def get_success_response(self):
         return redirect(self.get_success_url())
@@ -411,7 +467,8 @@ class PaymentDetailsView(OrderPlacementMixin, generic.TemplateView):
         'check_basket_is_not_empty',
         'check_basket_is_valid',
         'check_user_email_is_captured',
-        'check_shipping_data_is_captured']
+        'check_shipping_data_is_captured',
+        'check_payment_method_is_captured']
 
     # If preview=True, then we render a preview template that shows all order
     # details ready for submission.

@@ -11,7 +11,9 @@ from oscar.core.loading import get_class, get_model
 
 from . import exceptions
 
-Repository = get_class('shipping.repository', 'Repository')
+ShippingRepository = get_class('shipping.repository', 'Repository')
+PaymentRepository = get_class('payment.repository', 'Repository')
+
 OrderTotalCalculator = get_class(
     'checkout.calculators', 'OrderTotalCalculator')
 CheckoutSessionData = get_class(
@@ -204,6 +206,29 @@ class CheckoutSessionMixin(object):
                 message=_("Your previously chosen shipping method is "
                           "no longer valid.  Please choose another one")
             )
+                
+    def check_payment_method_is_captured(self, request):
+        self.check_a_valid_payment_method_is_captured()
+
+    def check_a_valid_payment_method_is_captured(self):
+        # Check that payment method has been set
+        if not self.checkout_session.payment_method():
+            raise exceptions.FailedPreCondition(
+                url=reverse('checkout:payment-method'),
+                message=_("Please choose a payment method")
+            )
+        
+        basket = self.request.basket
+        # Check that a *valid* payment method has been set
+        payment_method = self.get_payment_method(
+            basket=basket,
+            order_total=self.get_order_totals_with_shipping(basket))
+        if not payment_method:
+            raise exceptions.FailedPreCondition(
+                url=reverse('checkout:payment-method'),
+                message=_("Your previously chosen payment smethod is "
+                          "no longer valid.  Please choose another one")
+            )
 
     def check_payment_data_is_captured(self, request):
         # We don't collect payment data by default so we don't have anything to
@@ -270,12 +295,9 @@ class CheckoutSessionMixin(object):
         shipping_method = self.get_shipping_method(
             basket, shipping_address)
         billing_address = self.get_billing_address(shipping_address)
-        if not shipping_method:
-            total = shipping_charge = None
-        else:
-            shipping_charge = shipping_method.calculate(basket)
-            total = self.get_order_totals(
-                basket, shipping_charge=shipping_charge, **kwargs)
+        shipping_charge = self.get_shipping_charge(basket, shipping_method)
+        total = self.get_order_totals(
+            basket, shipping_charge=shipping_charge, **kwargs)
         submission = {
             'user': self.request.user,
             'basket': basket,
@@ -357,9 +379,24 @@ class CheckoutSessionMixin(object):
         stored in the session is still valid for the shipping address.
         """
         code = self.checkout_session.shipping_method_code(basket)
-        methods = Repository().get_shipping_methods(
+        methods = ShippingRepository().get_shipping_methods(
             basket=basket, user=self.request.user,
             shipping_addr=shipping_address, request=self.request)
+        for method in methods:
+            if method.code == code:
+                return method
+            
+    def get_payment_method(self, basket, order_total, **kwargs):
+        """
+        Return the selected payment method instance from this checkout session
+
+        The shipping charge is passed as we may need to calculate fees based on
+        the method chosen.
+        """
+        code = self.checkout_session.payment_method()
+        methods = PaymentRepository().get_payment_methods(
+            basket=basket, user=self.request.user,
+            order_total=order_total, request=self.request)
         for method in methods:
             if method.code == code:
                 return method
@@ -407,6 +444,13 @@ class CheckoutSessionMixin(object):
                 billing_address = BillingAddress()
                 user_address.populate_alternative_model(billing_address)
                 return billing_address
+            
+    def get_shipping_charge(self, basket, shipping_method, **kwargs):
+        """
+        Returns the shipping charge for the order
+        """
+        if shipping_method:
+            return shipping_method.calculate(basket)
 
     def get_order_totals(self, basket, shipping_charge, **kwargs):
         """
@@ -414,3 +458,19 @@ class CheckoutSessionMixin(object):
         """
         return OrderTotalCalculator(self.request).calculate(
             basket, shipping_charge, **kwargs)
+    
+    def get_order_totals_with_shipping(self, basket, **kwargs):
+        """
+        Calculates the shipping and returns the total for the order 
+        with and without tax.
+        """
+        shipping_address = self.get_shipping_address(basket)
+        shipping_method = self.get_shipping_method(
+            basket, shipping_address)
+        billing_address = self.get_billing_address(shipping_address)
+        if not shipping_method:
+            shipping_charge = None
+        else:
+            shipping_charge = shipping_method.calculate(basket)
+        return self.get_order_totals(
+            basket, shipping_charge=shipping_charge, **kwargs)
