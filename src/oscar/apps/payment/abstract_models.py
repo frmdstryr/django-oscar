@@ -191,8 +191,8 @@ class AbstractSource(Model):
         """
         Return the balance of this source
         """
-        return (self.amount_allocated - self.amount_debited +
-                self.amount_refunded)
+        return (self.amount_allocated - self.amount_debited
+                + self.amount_refunded)
 
     @property
     def amount_available_for_refund(self):
