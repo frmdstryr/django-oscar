@@ -89,6 +89,7 @@ var oscar = (function(o, $) {
             o.dashboard.initWYSIWYG(el);
             o.dashboard.initSelects(el);
             o.dashboard.initEditor(el);
+            o.dashboard.initSelectTransfer(el);
         },
         initMasks: function(el) {
             $(el).find(':input').inputmask();
@@ -118,6 +119,9 @@ var oscar = (function(o, $) {
                 }
                 $(e).select2(opts);
             });
+        },
+        initSelectTransfer: function(el) {
+            $(el).find('.select-transfer').select_transfer();
         },
         initDatePickers: function(el) {
             if ($.fn.datetimepicker) {
