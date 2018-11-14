@@ -182,6 +182,9 @@
         ],
         toolbar: '{{ dashboard_editor_toolbar_layout }}',
         contextmenu: '{{ dashboard_editor_context_menu }}'
+      },
+      'aceConfig': {
+        basePath: '{% static "oscar/js/ace/" %}',
       }
     };
     oscar.dashboard.init(options);

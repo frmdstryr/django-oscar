@@ -43,6 +43,7 @@ var oscar = (function(o, $) {
                 },
                 'aceConfig': {
                     mode: 'ace/mode/html',
+                    basePath: '/static/oscar/js/ace/',
                     autoScrollEditorIntoView: true,
                     maxLines: 30,
                     minLines: 10
