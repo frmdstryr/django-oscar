@@ -196,7 +196,12 @@ var oscar = (function(o, $) {
             $textareas.filter('.wysiwyg').tinymce(o.dashboard.options.tinyConfig);
         },
         initEditor: function(el) {
-            // Use Ace by default
+            // Set base path
+            if (o.dashboard.options.aceConfig.basePath) {
+                ace.config.set('basePath', o.dashboard.options.aceConfig.basePath);
+                delete o.dashboard.options.aceConfig['basePath'];
+            }
+            
             var $textareas = $(el).find('textarea').not('.no-editor-init textarea').not('.no-editor-init');
             var aceInit = function(i, e) {
                 // Add a div before the textarea
