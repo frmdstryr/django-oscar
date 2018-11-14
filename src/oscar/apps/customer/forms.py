@@ -41,7 +41,7 @@ class PasswordResetForm(auth_forms.PasswordResetForm):
     """
     communication_type_code = "PASSWORD_RESET"
 
-    def save(self, domain_override=None, use_https=False, request=None,
+    def save(self, domain_override=None, use_https=True, request=None,
              **kwargs):
         """
         Generates a one-use only link for resetting password and sends to the
@@ -66,8 +66,7 @@ class PasswordResetForm(auth_forms.PasswordResetForm):
     def get_reset_url(self, site, request, user, use_https):
         # the request argument isn't used currently, but implementors might
         # need it to determine the correct subdomain
-        reset_url = "%s://%s%s" % (
-            'https' if use_https else 'http',
+        reset_url = "https://%s%s" % (
             site.domain,
             get_password_reset_url(user))
 
