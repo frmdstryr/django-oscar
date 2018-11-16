@@ -244,7 +244,8 @@ class AbstractAddress(Model):
         _("Search text - used only for searching addresses"), editable=False)
 
     # Fields, used for `summary` property definition and hash generation.
-    base_fields = hash_fields = ['salutation', 'line1', 'line2', 'line3', 'line4', 'state', 'postcode', 'country']
+    hash_fields = ['salutation', 'line1', 'line2', 'line3', 'line4', 'state', 'postcode', 'country']
+    base_fields = ['salutation', 'line1', 'line2', 'line3', 'city_state_zip', 'country']
 
     def __str__(self):
         return self.summary
@@ -327,6 +328,13 @@ class AbstractAddress(Model):
         return self.join_fields(
             ('title', 'first_name', 'last_name'),
             separator=" ")
+
+    @property
+    def city_state_zip(self):
+        """
+        city, state, zipcode
+        """
+        return "{}, {} {}".format(self.city, self.state, self.postcode)
 
     @property
     def name(self):
