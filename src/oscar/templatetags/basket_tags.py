@@ -12,7 +12,7 @@ QNT_SINGLE, QNT_MULTIPLE = 'single', 'multiple'
 
 
 @register.simple_tag
-def basket_form(request, product, quantity_type='single'):
+def basket_form(request, product, quantity_type=QNT_MULTIPLE):
     if not isinstance(product, Product):
         return ''
 
