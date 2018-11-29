@@ -17,7 +17,7 @@ from django.utils.translation import gettext_lazy as _
 
 from oscar.core.compat import AUTH_USER_MODEL
 from oscar.core.decorators import deprecated
-from oscar.core.loading import get_class, get_classes, get_model
+from oscar.core.loading import get_class, get_classes, get_model, cached_import_string
 from oscar.models import fields
 from oscar.templatetags.currency_filters import currency
 
@@ -140,7 +140,7 @@ class AbstractConditionalOffer(Model):
 
     # Some complicated situations require offers to be applied in a set order.
     priority = models.IntegerField(
-        _("Priority"), default=0,
+        _("Priority"), default=0, db_index=True,
         help_text=_("The highest priority offers are applied first"))
 
     # AVAILABILITY
@@ -621,8 +621,11 @@ class AbstractBenefit(BaseOfferMixin, Model):
         """
         Apply rounding to discount amount
         """
-        if hasattr(settings, 'OSCAR_OFFER_ROUNDING_FUNCTION'):
-            return settings.OSCAR_OFFER_ROUNDING_FUNCTION(amount)
+        rounding_function_path = getattr(settings, 'OSCAR_OFFER_ROUNDING_FUNCTION', None)
+        if rounding_function_path:
+            rounding_function = cached_import_string(rounding_function_path)
+            return rounding_function(amount)
+
         return amount.quantize(D('.01'), ROUND_DOWN)
 
     def _effective_max_affected_items(self):
@@ -1055,7 +1058,7 @@ class AbstractRangeProductFileUpload(Model):
         AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         verbose_name=_("Uploaded By"))
-    date_uploaded = models.DateTimeField(_("Date Uploaded"), auto_now_add=True)
+    date_uploaded = models.DateTimeField(_("Date Uploaded"), auto_now_add=True, db_index=True)
 
     PENDING, FAILED, PROCESSED = 'Pending', 'Failed', 'Processed'
     choices = (

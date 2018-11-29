@@ -25,10 +25,10 @@ class AbstractPartner(Model):
     setting up an Oscar deployment. Many Oscar deployments will only have one
     fulfillment partner.
     """
-    code = AutoSlugField(_("Code"), max_length=128, unique=True,
+    code = AutoSlugField(_("Code"), max_length=128, unique=True, db_index=True,
                          populate_from='name')
     name = models.CharField(
-        pgettext_lazy("Partner's name", "Name"), max_length=128, blank=True)
+        pgettext_lazy("Partner's name", "Name"), max_length=128, blank=True, db_index=True)
 
     #: A partner can have users assigned to it. This is used
     #: for access modelling in the permission-based dashboard
@@ -285,7 +285,7 @@ class AbstractStockAlert(Model):
     )
     status = models.CharField(_("Status"), max_length=128, default=OPEN,
                               choices=status_choices)
-    date_created = models.DateTimeField(_("Date Created"), auto_now_add=True)
+    date_created = models.DateTimeField(_("Date Created"), auto_now_add=True, db_index=True)
     date_closed = models.DateTimeField(_("Date Closed"), blank=True, null=True)
 
     def close(self):
