@@ -457,11 +457,14 @@ class AbstractBenefit(BaseOfferMixin, Model):
     # Benefit types
     PERCENTAGE, FIXED, MULTIBUY, FIXED_PRICE = (
         "Percentage", "Absolute", "Multibuy", "Fixed price")
+    FIXED_PER_UNIT = "Discount per unit"
     SHIPPING_PERCENTAGE, SHIPPING_ABSOLUTE, SHIPPING_FIXED_PRICE = (
         'Shipping percentage', 'Shipping absolute', 'Shipping fixed price')
     TYPE_CHOICES = (
         (PERCENTAGE, _("Discount is a percentage off of the product's value")),
         (FIXED, _("Discount is a fixed amount off of the product's value")),
+        (FIXED_PER_UNIT,
+         _("Discount is a fixed amount off of the product's value per unit")),
         (MULTIBUY, _("Discount is to give the cheapest product for free")),
         (FIXED_PRICE,
          _("Get the products that meet the condition for a fixed price")),
@@ -505,6 +508,8 @@ class AbstractBenefit(BaseOfferMixin, Model):
                 'offer.benefits', 'PercentageDiscountBenefit'),
             self.FIXED: get_class(
                 'offer.benefits', 'AbsoluteDiscountBenefit'),
+            self.FIXED_PER_UNIT: get_class(
+                'offer.benefits', 'AbsoluteDiscountPerUnitBenefit'),
             self.MULTIBUY: get_class(
                 'offer.benefits', 'MultibuyDiscountBenefit'),
             self.FIXED_PRICE: get_class(
@@ -616,6 +621,9 @@ class AbstractBenefit(BaseOfferMixin, Model):
 
         if errors:
             raise exceptions.ValidationError(errors)
+        
+    def clean_discount_per_unit(self):
+        return self.clean_absolute()
 
     def round(self, amount):
         """
