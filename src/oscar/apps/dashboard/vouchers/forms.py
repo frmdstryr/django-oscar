@@ -34,6 +34,8 @@ class VoucherForm(forms.Form):
     type_choices = (
         (Benefit.PERCENTAGE, _('Percentage off of products in range')),
         (Benefit.FIXED, _('Fixed amount off of products in range')),
+        (Benefit.FIXED_PER_UNIT,
+         _('Fixed amount off of each unit of the products in range')),
         (Benefit.SHIPPING_PERCENTAGE,
          _("Discount is a percentage off of the shipping cost")),
         (Benefit.SHIPPING_ABSOLUTE,
@@ -125,6 +127,8 @@ class VoucherSetForm(forms.ModelForm):
     type_choices = (
         (Benefit.PERCENTAGE, _('Percentage off of products in range')),
         (Benefit.FIXED, _('Fixed amount off of products in range')),
+        (Benefit.FIXED_PER_UNIT,
+         _('Fixed amount off of each unit of the products in range')),
         (Benefit.SHIPPING_PERCENTAGE,
          _("Discount is a percentage off of the shipping cost")),
         (Benefit.SHIPPING_ABSOLUTE,
