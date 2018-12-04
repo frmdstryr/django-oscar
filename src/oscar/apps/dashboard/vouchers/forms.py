@@ -63,6 +63,10 @@ class VoucherForm(forms.Form):
             voucher = Voucher.objects.get(name=name)
         except Voucher.DoesNotExist:
             pass
+        except Voucher.MultipleObjectsReturned:
+            # If more than one exists we know one of them is not this voucher
+            raise forms.ValidationError(
+                _("The name '%s' is already in use") % name)
         else:
             if (not self.voucher) or (voucher.id != self.voucher.id):
                 raise forms.ValidationError(_("The name '%s' is already in"
