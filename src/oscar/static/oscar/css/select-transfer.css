@@ -17,6 +17,11 @@
     font-size: 14px;
     line-height: 13px;
     font-weight: bold;
+    background-image: -webkit-linear-gradient(top, #F8F8F8 0%, #e5e5e5 100%);
+    background-image: -o-linear-gradient(top, #F8F8F8 0%, #e5e5e5 100%);
+    background-image: linear-gradient(to bottom, #F8F8F8 0%, #e5e5e5 100%);
+    background-repeat: repeat-x;
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#fff8f8f8', endColorstr='#ffe5e5e5', GradientType=0);
 }
 
 .selector .selector-filter {
@@ -30,6 +35,11 @@
     width: 716px !important;
     max-width: 716px !important;
 }
+
+.selector input[type=text].form-control {
+    width: 100%;
+}
+
 .selector select[multiple=multiple] {
     margin: 0;
     padding-left: 3px;
@@ -73,7 +83,7 @@ a.selector-chooseall, a.selector-clearall {
 .selector-available, .selector-chosen {
     border: 1px solid #ddd;
     border-radius: 5px; -moz-border-radius: 5px; -webkit-border-radius: 5px;
-    background: #eee;
+    background: #e5e5e5;
 }
 .selector h3, .inline-group .selector h3, 
 .inline-related fieldset .selector-available h3, .inline-related fieldset .selector-chosen h3 {
