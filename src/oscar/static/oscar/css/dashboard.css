@@ -5733,7 +5733,7 @@ textarea {
   margin-bottom: 0;
 }
 div[data-spy="affix"] {
-  width: 266px;
+  min-width: 266px;
 }
 div[data-spy="affix"].affix {
   top: 1.42857143;
@@ -6012,6 +6012,10 @@ form.flat {
 .form-horizontal .control-label,
 .form-stacked .control-label {
   text-align: left;
+}
+.form-horizontal .control-label span,
+.form-stacked .control-label span {
+  color: #f00;
 }
 .form-horizontal .control-group,
 .form-stacked .control-group {
