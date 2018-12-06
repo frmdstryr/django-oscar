@@ -29,6 +29,8 @@ class ProductIndex(indexes.SearchIndex, indexes.Indexable):
 
     date_created = indexes.DateTimeField(model_attr='date_created')
     date_updated = indexes.DateTimeField(model_attr='date_updated')
+    
+    is_enabled = indexes.BooleanField(model_attr='is_enabled')
 
     _strategy = None
 
