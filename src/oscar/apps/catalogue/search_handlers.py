@@ -47,13 +47,13 @@ class SolrProductSearchHandler(SearchHandler):
 
     def get_search_queryset(self):
         sqs = super().get_search_queryset()
-        sqs = sqs.filter(is_enabled=True)
         if self.categories:
             # We use 'narrow' API to ensure Solr's 'fq' filtering is used as
             # opposed to filtering using 'q'.
             pattern = ' OR '.join([
                 '"%s"' % sqs.query.clean(c.full_name) for c in self.categories])
             sqs = sqs.narrow('category_exact:(%s)' % pattern)
+        sqs = sqs.filter_and(is_enabled=True)
         return sqs
 
 
@@ -72,10 +72,10 @@ class ESProductSearchHandler(SearchHandler):
 
     def get_search_queryset(self):
         sqs = super().get_search_queryset()
-        sqs = sqs.filter(is_enabled=True)
         if self.categories:
             for category in self.categories:
                 sqs = sqs.filter_or(category=category.full_name)
+        sqs = sqs.filter_and(is_enabled=True)
         return sqs
 
 
