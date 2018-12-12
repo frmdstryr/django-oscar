@@ -74,7 +74,7 @@ class ESProductSearchHandler(SearchHandler):
         sqs = super().get_search_queryset()
         if self.categories:
             for category in self.categories:
-                sqs = sqs.filter_or(category=category.full_name)
+                sqs = sqs.filter_or(category__exact=category.pk)
         sqs = sqs.filter_and(is_enabled=True)
         return sqs
 
