@@ -67,8 +67,11 @@ class OrderCreator(object):
 
             for voucher in basket.vouchers.select_for_update():
                 available_to_user, msg = voucher.is_available_to_user(user=user)
-                if not voucher.is_active() or not available_to_user:
+                if not available_to_user:
                     raise ValueError(msg)
+                elif not voucher.is_active():
+                    raise ValueError(_("The voucher '%s' is no longer active")
+                                     % voucher)
 
             # Record any discounts associated with this order
             for application in basket.offer_applications:
