@@ -92,7 +92,8 @@ class AbstractOrder(Model):
 
     # Index added to this field for reporting
     date_placed = models.DateTimeField(db_index=True)
-
+    
+    
     #: Order status pipeline.  This should be a dict where each (key, value) #:
     #: corresponds to a status and a list of possible statuses that can follow
     #: that one.
@@ -147,8 +148,7 @@ class AbstractOrder(Model):
         order_status_changed.send(sender=self,
                                   order=self,
                                   old_status=old_status,
-                                  new_status=new_status,
-                                  )
+                                  new_status=new_status)
 
         self._create_order_status_change(old_status, new_status)
 
@@ -891,6 +891,47 @@ class AbstractLinePrice(Model):
             'number': self.line,
             'qty': self.quantity,
             'price': self.price_incl_tax}
+
+
+# CHECKOUT EVENTS
+
+class AbstractCheckoutEvent(Model):
+    """ An event for tracking issues that may occur in the checkout process.
+
+    """
+    order = models.ForeignKey(
+        'order.Order',
+        on_delete=models.CASCADE,
+        related_name='checkout_events',
+        verbose_name=_("Order"))
+
+    #: Used to check for errors in the checkout process
+    EVENT_STARTED = 'started'
+    EVENT_PAYMENT_ATTEMPT = 'payment-attempt'
+    EVENT_PAYMENT_REDIRECT = 'payment-redirect'
+    EVENT_PAYMENT_FAILED = 'payment-failed'
+    EVENT_PAYMENT_ERROR = 'payment-error'
+    EVENT_ERROR = 'error'
+    EVENT_COMPLETE = 'complete'
+    EVENT_TYPE_CHOICES = (
+        (EVENT_STARTED, _('Checkout started')),
+        (EVENT_PAYMENT_ATTEMPT, _('Payment attempt started')),
+        (EVENT_PAYMENT_REDIRECT, _('Redirected to payment processor')),
+        (EVENT_PAYMENT_ATTEMPT, _('Payment attempt started')),
+        (EVENT_PAYMENT_FAILED, _('Payment attempt failed')),
+        (EVENT_PAYMENT_ERROR, _('Payment error occurred')),
+        (EVENT_ERROR, _('Error occurred during checkout')),
+        (EVENT_COMPLETE, _('Checkout and payment complete')),
+    )
+    type = models.CharField(max_length=32, choices=EVENT_TYPE_CHOICES)
+    data = models.TextField(_("Data"))
+    date_created = models.DateTimeField(
+        _("Date"), auto_now_add=True, db_index=True)
+
+    class Meta:
+        abstract = True
+        app_label = 'order'
+        verbose_name = _("Checkout Event")
 
 
 # PAYMENT EVENTS

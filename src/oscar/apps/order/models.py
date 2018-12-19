@@ -34,6 +34,13 @@ if not is_model_registered('order', 'CommunicationEvent'):
     __all__.append('CommunicationEvent')
 
 
+if not is_model_registered('order', 'CheckoutEvent'):
+    class CheckoutEvent(AbstractCheckoutEvent):
+        pass
+
+    __all__.append('CheckoutEvent')
+
+
 if not is_model_registered('order', 'ShippingAddress'):
     class ShippingAddress(AbstractShippingAddress):
         pass
