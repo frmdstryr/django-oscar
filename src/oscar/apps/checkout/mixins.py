@@ -12,6 +12,7 @@ from oscar.core.loading import get_class, get_model
 OrderCreator = get_class('order.utils', 'OrderCreator')
 Dispatcher = get_class('customer.utils', 'Dispatcher')
 CheckoutSessionMixin = get_class('checkout.session', 'CheckoutSessionMixin')
+CheckoutEvent = get_model('order', 'CheckoutEvent')
 BillingAddress = get_model('order', 'BillingAddress')
 ShippingAddress = get_model('order', 'ShippingAddress')
 OrderNumberGenerator = get_class('order.utils', 'OrderNumberGenerator')
@@ -89,6 +90,8 @@ class OrderPlacementMixin(CheckoutSessionMixin):
 
     # Placing order methods
     # ---------------------
+    def add_checkout_event(self, order, event_type, data):
+        CheckoutEvent(order=order, type=event_type, data=data).save()
 
     def generate_order_number(self, basket):
         """
@@ -113,7 +116,7 @@ class OrderPlacementMixin(CheckoutSessionMixin):
             shipping_charge=shipping_charge, order_total=order_total,
             billing_address=billing_address, **kwargs)
         basket.submit()
-        return self.handle_successful_order(order)
+        return order
 
     def place_order(self, order_number, user, basket, shipping_address,
                     shipping_method, shipping_charge, order_total,
@@ -152,7 +155,6 @@ class OrderPlacementMixin(CheckoutSessionMixin):
             status=status,
             request=request,
             **kwargs)
-        self.save_payment_details(order)
         return order
 
     def create_shipping_address(self, user, shipping_address):
@@ -248,6 +250,8 @@ class OrderPlacementMixin(CheckoutSessionMixin):
         Override this view if you want to perform custom actions when an
         order is submitted.
         """
+        self.save_payment_details(order)
+        
         # Send confirmation message (normally an email)
         self.send_confirmation_message(order, self.communication_type_code)
 
