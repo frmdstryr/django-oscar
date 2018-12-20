@@ -364,7 +364,8 @@ class AbstractAddress(Model):
         """
         Returns set of field values within the salutation and country.
         """
-        field_values = [f.strip() for f in self.get_field_values(fields) if f]
+        field_values = [f.strip() for f in self.get_field_values(fields) 
+                        if f.strip()]
         return field_values
 
     def generate_hash(self):
