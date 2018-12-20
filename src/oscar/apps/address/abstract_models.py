@@ -306,6 +306,10 @@ class AbstractAddress(Model):
         self.search_text = ' '.join(search_fields)
 
     # Properties
+    @property
+    def street(self):
+        # Common alias
+        return self.line1
 
     @property
     def city(self):
