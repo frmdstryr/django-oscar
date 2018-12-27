@@ -42,7 +42,7 @@ class AbstractBasket(Model):
         "Open", "Merged", "Saved", "Frozen", "Submitted")
     STATUS_CHOICES = (
         (OPEN, _("Open - currently active")),
-        (MERGED, _("Merged - superceded by another basket")),
+        (MERGED, _("Merged - superseded by another basket")),
         (SAVED, _("Saved - for items to be purchased later")),
         (FROZEN, _("Frozen - the basket cannot be modified")),
         (SUBMITTED, _("Submitted - has been ordered at the checkout")),

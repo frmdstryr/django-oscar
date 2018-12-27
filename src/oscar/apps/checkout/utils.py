@@ -1,3 +1,9 @@
+from oscar.core.loading import get_model
+
+
+Country = get_model('address', 'Country')
+
+
 class CheckoutSessionData(object):
     """
     Responsible for marshalling all the checkout session data
@@ -97,13 +103,27 @@ class CheckoutSessionData(object):
             # strings in the session, we need to serialize it.
             address_fields = address_fields.copy()
             address_fields['phone_number'] = phone_number.as_international
+        country = address_fields.get('country')
+        if country:
+            address_fields = address_fields.copy()
+            address_fields['country'] = country.code
         self._set('shipping', 'new_address_fields', address_fields)
 
     def new_shipping_address_fields(self):
         """
         Return shipping address fields
         """
-        return self._get('shipping', 'new_address_fields')
+        addr_data = self._get('shipping', 'new_address_fields')
+        if addr_data:
+            country = addr_data.pop('country', None)
+            if country:
+                addr_data = addr_data.copy()
+                try:
+                    addr_data['country'] = Country.objects.get(
+                        iso_3166_1_a2=country)
+                except Country.DoesNotExist:
+                    pass
+        return addr_data
 
     def shipping_user_address_id(self):
         """
@@ -172,6 +192,10 @@ class CheckoutSessionData(object):
             # strings in the session, we need to serialize it.
             address_fields = address_fields.copy()
             address_fields['phone_number'] = phone_number.as_international
+        country = address_fields.get('country')
+        if country:
+            address_fields = address_fields.copy()
+            address_fields['country'] = country.code
         self._set('billing', 'new_address_fields', address_fields)
 
     def bill_to_user_address(self, address):
@@ -207,7 +231,18 @@ class CheckoutSessionData(object):
         """
         Return fields for a billing address
         """
-        return self._get('billing', 'new_address_fields')
+        addr_data = self._get('billing', 'new_address_fields')
+        
+        if addr_data:
+            country = addr_data.pop('country', None)
+            if country:
+                addr_data = addr_data.copy()
+                try:
+                    addr_data['country'] = Country.objects.get(
+                        iso_3166_1_a2=country or 'US')
+                except Country.DoesNotExist:
+                    pass
+        return addr_data
 
     def is_billing_address_set(self):
         """

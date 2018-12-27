@@ -475,6 +475,21 @@ class PaymentDetailsView(OrderPlacementMixin, generic.TemplateView):
     # If preview=True, then we render a preview template that shows all order
     # details ready for submission.
     preview = False
+    
+    def check_basket_is_not_empty(self, request):
+        """ Attempt to restore the frozen submitted basket in 
+        the case where a payment error occurs.
+        """
+        if request.basket.is_empty:
+            basket_id = self.checkout_session.get_submitted_basket_id()
+            if basket_id:
+                try:
+                    basket = self.get_submitted_basket()
+                    basket.strategy = request.strategy
+                    request.basket = basket
+                except Basket.DoesNotExist:
+                    pass
+        return super().check_basket_is_not_empty(request)
 
     def get_pre_conditions(self, request):
         if self.preview:
@@ -575,7 +590,7 @@ class PaymentDetailsView(OrderPlacementMixin, generic.TemplateView):
         try:
             return self.request.user.addresses.get(is_default_for_billing=True)
         except UserAddress.DoesNotExist:
-            return self.request.user.addresses.all().first()
+            return None
     
     def get_previously_placed_order(self, order_number, basket):
         """ Try to lookup order that may have previously been placed but failed
@@ -683,7 +698,7 @@ class PaymentDetailsView(OrderPlacementMixin, generic.TemplateView):
         # error occurs.
         error_msg = _("A problem occurred while processing payment for this "
                       "order - no payment has been taken.  Please "
-                      "contact customer services if this problem persists")
+                      "contact customer service if this problem persists")
 
         # Attempt to take a payment. At this point the order has been placed
         # but is unpaid. The basket remains frozen and  it's contents cannot 

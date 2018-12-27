@@ -265,7 +265,7 @@ class BankcardForm(forms.ModelForm):
 
 
 class BillingAddressForm(PhoneNumberMixin, AbstractAddressForm):
-
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.set_country_queryset()
