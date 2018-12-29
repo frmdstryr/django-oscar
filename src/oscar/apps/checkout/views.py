@@ -590,7 +590,7 @@ class PaymentDetailsView(OrderPlacementMixin, generic.TemplateView):
         try:
             return self.request.user.addresses.get(is_default_for_billing=True)
         except UserAddress.DoesNotExist:
-            return None
+            return self.request.user.addresses.all().first()
     
     def get_previously_placed_order(self, order_number, basket):
         """ Try to lookup order that may have previously been placed but failed
