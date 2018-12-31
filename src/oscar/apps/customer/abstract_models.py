@@ -47,9 +47,14 @@ class UserManager(auth_models.BaseUserManager):
         return u
 
 
-class AbstractUser(Model,
-                   auth_models.AbstractBaseUser,
-                   auth_models.PermissionsMixin):
+if issubclass(auth_models.AbstractBaseUser, Model):
+    AbstractUserBases = (
+        auth_models.AbstractBaseUser, auth_models.PermissionsMixin)
+else:
+    AbstractUserBases = (
+        Model, auth_models.AbstractBaseUser, auth_models.PermissionsMixin)
+
+class AbstractUser(*AbstractUserBases):
     """
     An abstract base user suitable for use in Oscar projects.
 
