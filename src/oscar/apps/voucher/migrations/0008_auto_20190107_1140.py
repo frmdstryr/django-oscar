@@ -23,9 +23,4 @@ class Migration(migrations.Migration):
             name='description',
             field=wagtail.core.fields.RichTextField(verbose_name='Description'),
         ),
-        migrations.AlterField(
-            model_name='voucherset',
-            name='offer',
-            field=modelcluster.fields.ParentalOneToOneField(blank=True, limit_choices_to={'offer_type': 'Voucher'}, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='voucher_set', to='offer.ConditionalOffer', verbose_name='Offer'),
-        ),
     ]

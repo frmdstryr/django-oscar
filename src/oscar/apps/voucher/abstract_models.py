@@ -15,7 +15,7 @@ from wagtail.admin.edit_handlers import (
     FieldPanel, MultiFieldPanel, TabbedInterface, ObjectList, InlinePanel
 )
 from wagtail.core.fields import RichTextField
-from modelcluster.fields import ParentalKey, ParentalOneToOneField
+from modelcluster.fields import ParentalKey
 from modelcluster.models import ClusterableModel
 
 
@@ -46,7 +46,7 @@ class AbstractVoucherSet(ClusterableModel):
     start_datetime = models.DateTimeField(_('Start datetime'))
     end_datetime = models.DateTimeField(_('End datetime'))
 
-    offer = ParentalOneToOneField(
+    offer = models.OneToOneField(
         'offer.ConditionalOffer', related_name='voucher_set',
         verbose_name=_("Offer"), limit_choices_to={'offer_type': "Voucher"},
         on_delete=models.CASCADE, null=True, blank=True)
