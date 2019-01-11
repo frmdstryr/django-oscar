@@ -7,6 +7,8 @@ from oscar.core import validators
 from oscar.forms import fields
 from oscar.models.fields.autoslugfield import AutoSlugField
 
+from modelcluster.fields import ParentalKey, ParentalManyToManyField
+
 AutoSlugField = AutoSlugField
 PhoneNumberField = PhoneNumberField
 

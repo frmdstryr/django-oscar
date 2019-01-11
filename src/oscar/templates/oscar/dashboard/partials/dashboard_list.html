@@ -1,0 +1,22 @@
+{% load static %}
+<div class="dashboard-list {{classnames}}">
+    <h2>{{ title }}</h2>
+    <table class="listing">
+        <thead>
+            <tr>
+                {% for heading in headings %}
+                    <th class="column-title">{{heading}}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in data %}
+            <tr class="{% cycle 'odd' 'even' %}">
+                {% for col in row %}
+                    <td>{{col}}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

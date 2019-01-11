@@ -19,16 +19,23 @@ from oscar.apps.order.signals import (
 from oscar.core.compat import AUTH_USER_MODEL
 from oscar.core.loading import get_model, get_class
 from oscar.core.utils import get_default_currency
+from oscar.core.edit_handlers import (
+    FieldPanel, InlinePanel, MultiFieldPanel, FieldRowPanel,
+    TabbedInterface, ObjectList, ReadOnlyPanel, ModelChooserPanel
+)
 from oscar.models.fields import AutoSlugField
 
 from . import exceptions
 
+from modelcluster.fields import ParentalKey
+from modelcluster.models import ClusterableModel
 
-Model = get_class('core.models', 'Model')
+from .panels import OrderAddressPanel
+
 logger = logging.getLogger('oscar.order')
 
 
-class AbstractOrder(Model):
+class AbstractOrder(ClusterableModel):
     """
     The main order model
     """
@@ -92,8 +99,8 @@ class AbstractOrder(Model):
 
     # Index added to this field for reporting
     date_placed = models.DateTimeField(db_index=True)
-    
-    
+
+
     #: Order status pipeline.  This should be a dict where each (key, value) #:
     #: corresponds to a status and a list of possible statuses that can follow
     #: that one.
@@ -231,6 +238,24 @@ class AbstractOrder(Model):
         return self.total_incl_tax - self.total_excl_tax
 
     @property
+    def total_paid(self):
+        amount = D('0.00')
+        for source in self.sources.all():
+            amount += source.amount_debited
+        return amount
+
+    @property
+    def total_refunded(self):
+        amount = D('0.00')
+        for source in self.sources.all():
+            amount += source.amount_refunded
+        return amount
+
+    @property
+    def total_due(self):
+        return self.total_incl_tax-self.total_paid
+
+    @property
     def num_lines(self):
         return self.lines.count()
 
@@ -299,6 +324,16 @@ class AbstractOrder(Model):
             if event_map.get(line.pk, 0) != line.quantity:
                 return False
         return True
+
+    edit_handler = ObjectList([
+        ReadOnlyPanel('number'),
+        FieldPanel('user'),
+        OrderAddressPanel('shipping_address', classname='col6'),
+        OrderAddressPanel('billing_address', classname='col6'),
+        InlinePanel('lines', classname='col12'),
+        InlinePanel('status_changes', classname='col12'),
+        InlinePanel('notes', classname='col12'),
+    ])
 
     class Meta:
         abstract = True
@@ -389,14 +424,14 @@ class AbstractOrder(Model):
         super().save(*args, **kwargs)
 
 
-class AbstractOrderNote(Model):
+class AbstractOrderNote(models.Model):
     """
     A note against an order.
 
     This are often used for audit purposes too.  IE, whenever an admin
     makes a change to an order, we create a note to record what happened.
     """
-    order = models.ForeignKey(
+    order = ParentalKey(
         'order.Order',
         on_delete=models.CASCADE,
         related_name="notes",
@@ -437,8 +472,8 @@ class AbstractOrderNote(Model):
         return delta.seconds < self.editable_lifetime
 
 
-class AbstractOrderStatusChange(Model):
-    order = models.ForeignKey(
+class AbstractOrderStatusChange(models.Model):
+    order = ParentalKey(
         'order.Order',
         on_delete=models.CASCADE,
         related_name='status_changes',
@@ -461,12 +496,12 @@ class AbstractOrderStatusChange(Model):
         )
 
 
-class AbstractCommunicationEvent(Model):
+class AbstractCommunicationEvent(models.Model):
     """
     An order-level event involving a communication to the customer, such
     as an confirmation email being sent.
     """
-    order = models.ForeignKey(
+    order = ParentalKey(
         'order.Order',
         on_delete=models.CASCADE,
         related_name="communication_events",
@@ -492,11 +527,11 @@ class AbstractCommunicationEvent(Model):
 # LINES
 
 
-class AbstractLine(Model):
+class AbstractLine(ClusterableModel):
     """
     An order line
     """
-    order = models.ForeignKey(
+    order = ParentalKey(
         'order.Order',
         on_delete=models.CASCADE,
         related_name='lines',
@@ -826,11 +861,11 @@ class AbstractLine(Model):
         return True, None
 
 
-class AbstractLineAttribute(Model):
+class AbstractLineAttribute(models.Model):
     """
     An attribute of a line
     """
-    line = models.ForeignKey(
+    line = ParentalKey(
         'order.Line',
         on_delete=models.CASCADE,
         related_name='attributes',
@@ -851,7 +886,7 @@ class AbstractLineAttribute(Model):
         return "%s = %s" % (self.type, self.value)
 
 
-class AbstractLinePrice(Model):
+class AbstractLinePrice(models.Model):
     """
     For tracking the prices paid for each unit within a line.
 
@@ -864,7 +899,7 @@ class AbstractLinePrice(Model):
         on_delete=models.CASCADE,
         related_name='line_prices',
         verbose_name=_("Option"))
-    line = models.ForeignKey(
+    line = ParentalKey(
         'order.Line',
         on_delete=models.CASCADE,
         related_name='prices',
@@ -895,11 +930,11 @@ class AbstractLinePrice(Model):
 
 # CHECKOUT EVENTS
 
-class AbstractCheckoutEvent(Model):
+class AbstractCheckoutEvent(models.Model):
     """ An event for tracking issues that may occur in the checkout process.
 
     """
-    order = models.ForeignKey(
+    order = ParentalKey(
         'order.Order',
         on_delete=models.CASCADE,
         related_name='checkout_events',
@@ -937,7 +972,7 @@ class AbstractCheckoutEvent(Model):
 # PAYMENT EVENTS
 
 
-class AbstractPaymentEventType(Model):
+class AbstractPaymentEventType(models.Model):
     """
     Payment event types are things like 'Paid', 'Failed', 'Refunded'.
 
@@ -958,7 +993,7 @@ class AbstractPaymentEventType(Model):
         return self.name
 
 
-class AbstractPaymentEvent(Model):
+class AbstractPaymentEvent(models.Model):
     """
     A payment event for an order
 
@@ -967,7 +1002,7 @@ class AbstractPaymentEvent(Model):
     * All lines have been paid for
     * 2 lines have been refunded
     """
-    order = models.ForeignKey(
+    order = ParentalKey(
         'order.Order',
         on_delete=models.CASCADE,
         related_name='payment_events',
@@ -1009,7 +1044,7 @@ class AbstractPaymentEvent(Model):
         return self.lines.all().count()
 
 
-class PaymentEventQuantity(Model):
+class PaymentEventQuantity(models.Model):
     """
     A "through" model linking lines to payment events
     """
@@ -1035,12 +1070,12 @@ class PaymentEventQuantity(Model):
 # SHIPPING EVENTS
 
 
-class AbstractShippingEvent(Model):
+class AbstractShippingEvent(models.Model):
     """
     An event is something which happens to a group of lines such as
     1 item being dispatched.
     """
-    order = models.ForeignKey(
+    order = ParentalKey(
         'order.Order',
         on_delete=models.CASCADE,
         related_name='shipping_events',
@@ -1056,7 +1091,8 @@ class AbstractShippingEvent(Model):
         _("Event notes"), blank=True,
         help_text=_("This could be the dispatch reference, or a "
                     "tracking number"))
-    date_created = models.DateTimeField(_("Date Created"), auto_now_add=True, db_index=True)
+    date_created = models.DateTimeField(
+        _("Date Created"), auto_now_add=True, db_index=True)
 
     class Meta:
         abstract = True
@@ -1074,7 +1110,7 @@ class AbstractShippingEvent(Model):
         return self.lines.count()
 
 
-class ShippingEventQuantity(Model):
+class ShippingEventQuantity(models.Model):
     """
     A "through" model linking lines to shipping events.
 
@@ -1115,7 +1151,7 @@ class ShippingEventQuantity(Model):
             'qty': self.quantity}
 
 
-class AbstractShippingEventType(Model):
+class AbstractShippingEventType(models.Model):
     """
     A type of shipping/fulfillment event
 
@@ -1141,7 +1177,7 @@ class AbstractShippingEventType(Model):
 # DISCOUNTS
 
 
-class AbstractOrderDiscount(Model):
+class AbstractOrderDiscount(models.Model):
     """
     A discount against an order.
 
@@ -1152,7 +1188,7 @@ class AbstractOrderDiscount(Model):
     This has evolved to be a slightly misleading class name as this really
     track benefit applications which aren't necessarily discounts.
     """
-    order = models.ForeignKey(
+    order = ParentalKey(
         'order.Order',
         on_delete=models.CASCADE,
         related_name="discounts",

@@ -6,14 +6,13 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from oscar.core import loading, prices
-from oscar.models.fields import AutoSlugField
+from oscar.models.fields import AutoSlugField, ParentalKey
+from modelcluster.models import ClusterableModel
 
-
-Model = loading.get_class('core.models', 'Model')
 Scale = loading.get_class('shipping.scales', 'Scale')
 
 
-class AbstractBase(Model):
+class AbstractBase(ClusterableModel):
     """
     Implements the interface declared by shipping.base.Base
     """
@@ -186,11 +185,11 @@ class AbstractWeightBased(AbstractBase):
             return None
 
 
-class AbstractWeightBand(Model):
+class AbstractWeightBand(models.Model):
     """
     Represents a weight band which are used by the WeightBasedShipping method.
     """
-    method = models.ForeignKey(
+    method = ParentalKey(
         'shipping.WeightBased',
         on_delete=models.CASCADE,
         related_name='bands',

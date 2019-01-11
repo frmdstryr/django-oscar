@@ -1,0 +1,11 @@
+{% extends "wagtailadmin/admin_base.html" %}
+{% load i18n static wagtailadmin_tags %}
+
+{% block css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'oscar/css/icomoon.css' %}" type="text/css" />
+{% endblock %}
+
+{% block branding_favicon %}
+    <link rel="shortcut icon" href="{% static 'oscar/favicon.ico' %}" />
+{% endblock %}

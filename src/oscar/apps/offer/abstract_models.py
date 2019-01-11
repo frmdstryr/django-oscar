@@ -5,6 +5,7 @@ import re
 from decimal import Decimal as D
 from decimal import ROUND_DOWN
 
+from django import forms
 from django.conf import settings
 from django.core import exceptions
 from django.db import models
@@ -21,14 +22,24 @@ from oscar.core.loading import get_class, get_classes, get_model, cached_import_
 from oscar.models import fields
 from oscar.templatetags.currency_filters import currency
 
-Model = get_class('core.models', 'Model')
+from wagtailautocomplete.edit_handlers import AutocompletePanel
+from wagtail.admin.edit_handlers import (
+    FieldPanel, InlinePanel, MultiFieldPanel, FieldRowPanel,
+    TabbedInterface, ObjectList
+)
+from wagtail.core.fields import RichTextField
+from wagtail.core.models import Orderable
+from modelcluster.fields import ParentalKey
+from modelcluster.models import ClusterableModel
+
+
 ActiveOfferManager, BrowsableRangeManager \
     = get_classes('offer.managers', ['ActiveOfferManager', 'BrowsableRangeManager'])
 ZERO_DISCOUNT = get_class('offer.results', 'ZERO_DISCOUNT')
 load_proxy, unit_price = get_classes('offer.utils', ['load_proxy', 'unit_price'])
 
 
-class BaseOfferMixin(Model):
+class BaseOfferMixin(models.Model):
     class Meta:
         abstract = True
 
@@ -81,7 +92,7 @@ class BaseOfferMixin(Model):
         return self.name
 
 
-class AbstractConditionalOffer(Model):
+class AbstractConditionalOffer(ClusterableModel):
     """
     A conditional offer (eg buy 1, get 10% off)
     """
@@ -90,9 +101,9 @@ class AbstractConditionalOffer(Model):
         help_text=_("This is displayed within the customer's basket"))
     slug = fields.AutoSlugField(
         _("Slug"), max_length=128, unique=True, populate_from='name')
-    description = models.TextField(_("Description"), blank=True,
-                                   help_text=_("This is displayed on the offer"
-                                               " browsing page"))
+    description = RichTextField(
+        _("Description"), blank=True,
+        help_text=_("This is displayed on the offer browsing page"))
 
     # Offers come in a few different types:
     # (a) Offers that are available to all customers on the site.  Eg a
@@ -446,8 +457,8 @@ class AbstractConditionalOffer(Model):
             structure=Product.CHILD)
 
 
-class AbstractBenefit(BaseOfferMixin, Model):
-    range = models.ForeignKey(
+class AbstractBenefit(BaseOfferMixin):
+    range = ParentalKey(
         'offer.Range',
         blank=True,
         null=True,
@@ -621,7 +632,7 @@ class AbstractBenefit(BaseOfferMixin, Model):
 
         if errors:
             raise exceptions.ValidationError(errors)
-        
+
     def clean_discount_per_unit(self):
         return self.clean_absolute()
 
@@ -681,7 +692,7 @@ class AbstractBenefit(BaseOfferMixin, Model):
         return D('0.00')
 
 
-class AbstractCondition(BaseOfferMixin, Model):
+class AbstractCondition(BaseOfferMixin):
     """
     A condition for an offer to be applied. You can either specify a custom
     proxy class, or need to specify a type, range and value.
@@ -694,7 +705,7 @@ class AbstractCondition(BaseOfferMixin, Model):
                   "condition range")),
         (COVERAGE, _("Needs to contain a set number of DISTINCT items "
                      "from the condition range")))
-    range = models.ForeignKey(
+    range = ParentalKey(
         'offer.Range',
         blank=True,
         null=True,
@@ -776,7 +787,7 @@ class AbstractCondition(BaseOfferMixin, Model):
         return sorted(line_tuples, key=key)
 
 
-class AbstractRange(Model):
+class AbstractRange(ClusterableModel):
     """
     Represents a range of products that can be used within an offer.
 
@@ -787,7 +798,7 @@ class AbstractRange(Model):
     slug = fields.AutoSlugField(
         _("Slug"), max_length=128, unique=True, populate_from="name")
 
-    description = models.TextField(blank=True)
+    description = RichTextField(blank=True)
 
     # Whether this range is public
     is_public = models.BooleanField(
@@ -795,7 +806,9 @@ class AbstractRange(Model):
         help_text=_("Public ranges have a customer-facing page"))
 
     includes_all_products = models.BooleanField(
-        _('Includes all products?'), default=False)
+        _('Includes all products?'), default=False,
+        help_text=_("If checked this will include every product except those "
+                    "in the excluded products list"))
 
     included_products = models.ManyToManyField(
         'catalogue.Product', related_name='includes', blank=True,
@@ -824,6 +837,34 @@ class AbstractRange(Model):
 
     objects = models.Manager()
     browsable = BrowsableRangeManager()
+
+    edit_handler = TabbedInterface([
+        ObjectList([
+            FieldPanel('name'),
+            FieldPanel('description', classname='full'),
+            FieldPanel('is_public'),
+            FieldPanel('includes_all_products'),
+            #FieldPanel('proxy_class'),
+        ], heading=_('Details')),
+        ObjectList([
+            FieldPanel('included_categories', widget=forms.CheckboxSelectMultiple),
+        ], heading=_('Categories')),
+        ObjectList([
+            FieldPanel('classes', widget=forms.CheckboxSelectMultiple),
+        ], heading=_('Products types')),
+        ObjectList([
+            AutocompletePanel(
+                'included_products',
+                page_type='catalogue.Product',
+                is_single=False),
+        ], heading=_('Included Products')),
+        ObjectList([
+            AutocompletePanel(
+                'excluded_products',
+                page_type='catalogue.Product',
+                is_single=False),
+        ], heading=_('Excluded Products')),
+    ])
 
     class Meta:
         abstract = True
@@ -1021,7 +1062,7 @@ class AbstractRange(Model):
         return Product.objects.filter(
             Q(id__in=self._included_product_ids())
             | Q(product_class_id__in=self._class_ids())
-            | Q(productcategory__category_id__in=self._category_ids())
+            | Q(categories__id__in=self._category_ids())
         ).exclude(id__in=self._excluded_product_ids()).distinct()
 
     @property
@@ -1039,14 +1080,13 @@ class AbstractRange(Model):
         return len(self._class_ids()) == 0 and len(self._included_categories()) == 0
 
 
-class AbstractRangeProduct(Model):
+class AbstractRangeProduct(Orderable):
     """
     Allow ordering products inside ranges
     Exists to allow customising.
     """
-    range = models.ForeignKey('offer.Range', on_delete=models.CASCADE)
+    range = ParentalKey('offer.Range', on_delete=models.CASCADE)
     product = models.ForeignKey('catalogue.Product', on_delete=models.CASCADE)
-    display_order = models.IntegerField(default=0)
 
     class Meta:
         abstract = True
@@ -1054,8 +1094,8 @@ class AbstractRangeProduct(Model):
         unique_together = ('range', 'product')
 
 
-class AbstractRangeProductFileUpload(Model):
-    range = models.ForeignKey(
+class AbstractRangeProductFileUpload(models.Model):
+    range = ParentalKey(
         'offer.Range',
         on_delete=models.CASCADE,
         related_name='file_uploads',

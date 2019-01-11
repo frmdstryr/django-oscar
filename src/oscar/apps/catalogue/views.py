@@ -173,7 +173,7 @@ class ProductCategoryView(TemplateView):
 
     def get_category(self):
         category = get_object_or_404(
-            Category, pk=self.kwargs['pk'], is_enabled=True)
+            Category, pk=self.kwargs['pk'], live=True)
         if category.is_disabled():
             raise Http404() 
         return category

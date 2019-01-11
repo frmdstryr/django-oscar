@@ -1,0 +1,301 @@
+{% extends "modeladmin/inspect.html" %}
+{% load i18n modeladmin_tags currency_filters %}
+{% block fields_output %}
+{% with instance as order %}
+<div class="order order-details">
+    {% block account_info_section %}
+    <div class="row account-section">
+        <h2>{% blocktrans %}Order & Account Information{% endblocktrans %}</h2>
+        <div class="col6">
+            <table class="listing">
+                <thead>
+                <tr>
+                    <th colspan="2"><h3>{% trans 'Order' %} {{ order.number }}</h3></th>
+                </tr>
+                </thead>
+                <tbody>
+                    <tr class="odd">
+                        <td>{% trans 'Order Date' %}</td>
+                        <td>{{ order.date_placed }}</td>
+                    </tr>
+                    <tr class="even">
+                        <td>{% trans 'Order Status' %}</td>
+                        <td>{{ order.status|default:"N/A" }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col6">
+            <table class="listing">
+                <thead>
+                <tr>
+                    <th colspan="2"><h3>{% trans 'Account Information' %}</h3></th>
+                </tr>
+                </thead>
+                <tbody>
+                    <tr class="odd">
+                        <td>{% trans 'Customer Name' %}</td>
+                        <td>{% if order.user %}<a href="{% url 'customer_user_modeladmin_edit' order.user.id %}">{{ order.user }}</a>{% else %}-{% endif %}</td>
+                    </tr>
+                    <tr class="even">
+                        <td>{% trans 'Email' %}</td>
+                        <td>
+                            <a href="mailto:{{orer.email}}">{{order.email}}</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endblock %}
+
+    {% block address_section %}
+    <div class="row address-section">
+        <h2>{% blocktrans %}Address Information{% endblocktrans %}</h2>
+        <div class="billing-address col6">
+            <table class="listing">
+                <thead>
+                    <tr>
+                        <th><h3>{% trans 'Billing Address' %}</h3></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="odd">
+                        <td>
+                            <a class="action-edit" href="#todo">Edit</a>
+                            {% if order.billing_address %}
+                                <address>
+                                    {% for field in order.billing_address.active_address_fields %}
+                                        {{field}}<br/>
+                                    {% endfor %}
+                                </address>
+                            {% else %}
+                                <p>{% trans 'No billing address was provided for this order.' %}</p>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="shipping-address col6">
+            <table class="listing">
+                <thead>
+                    <tr>
+                        <th><h3>{% trans 'Shipping Address' %}</h3></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="odd">
+                        <td>
+                            <a class="action-edit" href="#todo">Edit</a>
+                            {% if order.shipping_address %}
+                                <address>
+                                    {% for field in order.shipping_address.active_address_fields %}
+                                        {{field}}<br/>
+                                    {% endfor %}
+                                </address>
+                            {% else %}
+                                <p>{% trans 'No shipping address was provided for this order.' %}</p>
+                            {% endif %}
+                         </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endblock %}
+
+    {% block payment_and_shipping_section %}
+    <div class="row payment-and-shipping-section">
+        <h2>{% blocktrans %}Payment & Shipping Information{% endblocktrans %}</h2>
+        <div class="payment-info col6">
+            <table class="listing">
+                <thead>
+                    <tr>
+                        <th><h3>{% trans 'Payment Information' %}</h3></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="odd">
+                        <td>
+                            {% if order.sources.exists %}
+                                {% for source in order.sources.all %}
+                                    <ul>
+                                        <li class="title">{{ source.source_type }}</li>
+                                        {% if source.amount_allocated %}<li>Allocated: {{ source.amount_allocated|currency:order.currency }}</li>{% endif %}
+                                        {% if source.amount_debited %}<li>Debited: {{ source.amount_debited|currency:order.currency }}</li>{% endif %}
+                                        {% if source.amount_refunded %}<li>Refunded: {{ source.amount_refunded|currency:order.currency }}</li>{% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <p>{% trans 'No payments were completed for this order.' %}</p>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="shipping-info col6">
+            <table class="listing">
+                <thead>
+                    <tr>
+                        <th><h3>{% trans 'Shipping & Handling Information' %}</h3></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="odd">
+                        <td>
+                            <ul>
+                                <li>{{order.shipping_method}} - {{order.shipping_excl_tax|currency:order.currency}}</li>
+                                <li>{{order.shipping_status}}</li>
+                            </ul>
+                         </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endblock %}
+
+
+    {% block items_ordered_section %}
+    <div class="row items-ordered-section">
+        <h2>{% blocktrans %}Items Ordered{% endblocktrans %}</h2>
+        <div class="order-items col12">
+            <table class="listing">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>{% trans "Product" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Original Price" %}</th>
+                        <th>{% trans "Price" %}</th>
+                        <th>{% trans "Qty" %}</th>
+                        <th>{% trans "Subtotal" %}</th>
+                        <th>{% trans "Tax Amount" %}</th>
+                        <th>{% trans "Discount Amount" %}</th>
+                        <th>{% trans "Row Total" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for line in order.lines.all %}
+                    <tr class="line-item {% cycle 'odd' 'even' %}">
+                        <td><input type="checkbox" name="line" value="{{ line.id }}" /></td>
+                        <td>
+                            <ul>
+                                <li class="product">
+                                    {% if line.product %}
+                                        <a href="{% url 'catalogue_product_modeladmin_edit' line.product.id %}">{{ line.title }}</a>
+                                    {% else %}
+                                        {{ line.title }}
+                                    {% endif %}
+                                </li>
+                                <li class="upc"><span>UPC:</span> {{ line.upc }} </li>
+                                <li class="partner"><span>Partner:</span>
+                                    {% if line.partner %}
+                                        <a href="{% url 'partner_partner_modeladmin_edit' line.partner.id %}">{{ line.partner_name }}</a>
+                                    {% else %}
+                                        {{ line.partner_name }}
+                                    {% endif %}
+                                </li>
+                            </ul>
+                        </td>
+                        <td>{{ line.status | default:"-" }}</td>
+                        <td>{{ line.unit_price_excl_tax|currency:order.currency }}</td>
+                        <td>{{ line.line_price_excl_tax|currency:order.currency }}</td>
+                        <td>{{ line.quantity }}</td>
+                        <td>Subtots</td>
+                        <td>Tax</td>
+                        <td>discount</td>
+                        <td>Total</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endblock %}
+
+    {% block order_total_section %}
+    <div class="row order-total-section">
+        <h2>{% blocktrans %}Order Total{% endblocktrans %}</h2>
+        <div class="order-notes col7">
+            <table class="listing">
+                <thead>
+                    <tr>
+                        <th colspan="4"><h3>{% trans 'Notes for this order' %}</h3></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for note in order.notes.all %}
+                    <tr class="{% cycle 'odd' 'even' %}">
+                        <td>{{note.note_type}}</td>
+                        <td>{{note.message}}</td>
+                        <td>{{note.user}}</td>
+                        <td>{{note.date_created}}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4">{% trans 'No notes for this order.' %}</td></tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="order-note-form">
+                        <td colspan="4">
+                            TODO: Render form
+                         </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <div class="order-totals col5">
+            <table class="listing">
+                <thead>
+                    <tr>
+                        <th colspan="2"><h3>{% trans 'Order Totals' %}</h3></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="odd">
+                        <td>{% trans 'Subtotal' %}</td>
+                        <td class="amount">{{ order.basket_total_before_discounts_incl_tax|currency:order.currency  }}</td>
+                    </tr>
+                    <tr class="even">
+                        <td>{% trans 'Shipping & Handling' %}</td>
+                        <td class="amount">{{ order.shipping_incl_tax|currency:order.currency }}</td>
+
+                    </tr>
+                    <tr class="odd">
+                        <td>{% trans 'Discount' %}</td>
+                        <td class="amount">{{ order.total_discount_incl_tax|currency:order.currency }}</td>
+                    </tr>
+                    <tr class="even">
+                        <td>{% trans 'Total Tax' %}</td>
+                        <td class="amount">{{ order.total_tax|currency:order.currency }}</td>
+                    </tr>
+                    <tr class="grand-total strong">
+                        <td>{% trans 'Grand Total' %}</td>
+                        <td class="amount">{{ order.total_excl_tax|currency:order.currency }}</td>
+                    </tr>
+                    <tr class="total-paied strong">
+                        <td>{% trans 'Total Paid' %}</td>
+                        <td class="amount">{{ order.total_paid|currency:order.currency }}</td>
+                    </tr>
+                    <tr class="total-refunded strong">
+                        <td>{% trans 'Total Refunded' %}</td>
+                        <td class="amount">{{ order.total_refunded|currency:order.currency }}</td>
+                    </tr>
+                    <tr class="total-due strong">
+                        <td>{% trans 'Total Due' %}</td>
+                        <td class="amount">{{ order.total_due|currency:order.currency }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endblock %}
+
+</div>
+{% endwith %}
+{% endblock %}

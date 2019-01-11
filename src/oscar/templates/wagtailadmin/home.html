@@ -1,0 +1,10 @@
+{% extends "wagtailadmin/home.html" %}
+{% load static %}
+
+{% block js %}
+    {{ block.super }}
+    <script src="{% static 'oscar/js/plotly/plotly-latest.min.js' %}"></script>
+    <script src="{% static 'oscar/js/oscar/plotly.js' %}"></script>
+{% endblock %}
+
+{% block branding_welcome %}{{site_name}}{% endblock %}

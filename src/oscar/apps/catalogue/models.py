@@ -76,6 +76,17 @@ if not is_model_registered('catalogue', 'Option'):
 
     __all__.append('Option')
 
+if not is_model_registered('catalogue', 'AddToCartOptionGroup'):
+    class AddToCartOptionGroup(AbstractAddToCartOptionGroup):
+        pass
+
+    __all__.append('AddToCartOptionGroup')
+
+if not is_model_registered('catalogue', 'AddToCartOption'):
+    class AddToCartOption(AbstractAddToCartOption):
+        pass
+
+    __all__.append('AddToCartOption')
 
 if not is_model_registered('catalogue', 'ProductImage'):
     class ProductImage(AbstractProductImage):

@@ -1,7 +1,7 @@
 # flake8: noqa, because URL syntax is more readable with long lines
 
 from django.conf import settings
-from django.conf.urls import url
+from django.conf.urls import include, url
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.forms import SetPasswordForm
 from django.urls import reverse_lazy
@@ -9,6 +9,14 @@ from django.urls import reverse_lazy
 from oscar.core.application import Application
 from oscar.core.loading import get_class
 from oscar.views.decorators import login_forbidden
+
+
+import wagtail.admin.urls
+import wagtail.core.urls
+import wagtail.documents.urls
+
+from wagtailautocomplete.urls.admin import urlpatterns as autocomplete_admin_urls
+from wagtailmodelchooser.urls import urlpatterns as modelchooser_urls
 
 
 class Shop(Application):
@@ -20,7 +28,7 @@ class Shop(Application):
     checkout_app = get_class('checkout.app', 'application')
     promotions_app = get_class('promotions.app', 'application')
     search_app = get_class('search.app', 'application')
-    dashboard_app = get_class('dashboard.app', 'application')
+    #dashboard_app = get_class('dashboard.app', 'application')
     offer_app = get_class('offer.app', 'application')
 
     password_reset_form = get_class('customer.forms', 'PasswordResetForm')
@@ -28,12 +36,14 @@ class Shop(Application):
 
     def get_urls(self):
         urls = [
+            url(r'^dashboard/', include(wagtail.admin.urls)),
+            url(r'^documents/', include(wagtail.documents.urls)),
             url(r'^catalogue/', self.catalogue_app.urls),
             url(r'^basket/', self.basket_app.urls),
             url(r'^checkout/', self.checkout_app.urls),
             url(r'^accounts/', self.customer_app.urls),
             url(r'^search/', self.search_app.urls),
-            url(r'^dashboard/', self.dashboard_app.urls),
+            #url(r'^dashboard/', self.dashboard_app.urls),
             url(r'^offers/', self.offer_app.urls),
 
             # Password reset - as we're using Django's default view functions,
@@ -61,10 +71,19 @@ class Shop(Application):
             url(r'^password-reset/complete/$',
                 login_forbidden(auth_views.PasswordResetCompleteView.as_view()),
                 name='password-reset-complete'),
+
+            url(r'^admin/autocomplete/', include(autocomplete_admin_urls)),
+            url(r'^dashboard/', include(modelchooser_urls)),
+
+            url(r'', include(wagtail.core.urls)),
         ]
 
+        if settings.DEBUG:
+            import debug_toolbar
+            urls.insert(-2, url(r'^__debug__/', include(debug_toolbar.urls)))
+
         if settings.OSCAR_PROMOTIONS_ENABLED:
-            urls.append(url(r'', self.promotions_app.urls))
+            urls.insert(-2, url(r'', self.promotions_app.urls))
         return urls
 
 application = Shop()

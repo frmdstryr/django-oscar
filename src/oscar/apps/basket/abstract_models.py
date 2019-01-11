@@ -2,10 +2,14 @@ import zlib
 from decimal import Decimal as D
 
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+from django.core.files.base import File
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db import models
 from django.db.models import Sum
 from django.utils.encoding import smart_text
+from django.utils.html import strip_tags
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 
@@ -15,14 +19,18 @@ from oscar.core.utils import get_default_currency, round_half_up
 from oscar.models.fields.slugfield import SlugField
 from oscar.templatetags.currency_filters import currency
 
-Model = get_class('core.models', 'Model')
+from modelcluster.fields import ParentalKey
+from modelcluster.models import ClusterableModel
+
+
 OfferApplications = get_class('offer.results', 'OfferApplications')
 Unavailable = get_class('partner.availability', 'Unavailable')
 LineOfferConsumer = get_class('basket.utils', 'LineOfferConsumer')
-OpenBasketManager, SavedBasketManager = get_classes('basket.managers', ['OpenBasketManager', 'SavedBasketManager'])
+OpenBasketManager, SavedBasketManager = get_classes(
+    'basket.managers', ['OpenBasketManager', 'SavedBasketManager'])
 
 
-class AbstractBasket(Model):
+class AbstractBasket(ClusterableModel):
     """
     Basket object
     """
@@ -585,7 +593,7 @@ class AbstractBasket(Model):
             return 0
 
 
-class AbstractLine(Model):
+class AbstractLine(ClusterableModel):
     """A line of a basket (product and a quantity)
 
     Common approaches on ordering basket lines:
@@ -607,7 +615,7 @@ class AbstractLine(Model):
            necessary there.
 
     """
-    basket = models.ForeignKey(
+    basket = ParentalKey(
         'basket.Basket',
         on_delete=models.CASCADE,
         related_name='lines',
@@ -918,12 +926,20 @@ class AbstractLine(Model):
                             " it to your basket")
                 return warning % product_prices
 
+    @property
+    def description(self):
+        return smart_text(self.product)
 
-class AbstractLineAttribute(Model):
+    @property
+    def has_attributes(self):
+        return self.attributes.exists()
+
+
+class AbstractLineAttribute(models.Model):
     """
     An attribute of a basket line
     """
-    line = models.ForeignKey(
+    line = ParentalKey(
         'basket.Line',
         on_delete=models.CASCADE,
         related_name='attributes',
@@ -932,7 +948,120 @@ class AbstractLineAttribute(Model):
         'catalogue.Option',
         on_delete=models.CASCADE,
         verbose_name=_("Option"))
-    value = models.CharField(_("Value"), max_length=255)
+
+    value_text = models.TextField(_('Text'), blank=True, null=True)
+    value_integer = models.IntegerField(_('Integer'), blank=True, null=True)
+    value_boolean = models.NullBooleanField(_('Boolean'), blank=True)
+    value_float = models.FloatField(_('Float'), blank=True, null=True)
+    value_richtext = models.TextField(_('Richtext'), blank=True, null=True)
+    value_date = models.DateField(_('Date'), blank=True, null=True)
+    value_datetime = models.DateTimeField(_('DateTime'), blank=True, null=True)
+    value_multi_option = models.ManyToManyField(
+        'catalogue.AddToCartOption', blank=True,
+        related_name='multi_valued_line_attribute_values',
+        verbose_name=_("Value multi option"))
+    value_option = models.ForeignKey(
+        'catalogue.AddToCartOption',
+        blank=True,
+        null=True,
+        on_delete=models.CASCADE,
+        verbose_name=_("Value option"))
+    value_file = models.FileField(
+        upload_to=settings.OSCAR_IMAGE_FOLDER, max_length=255,
+        blank=True, null=True)
+    value_image = models.ImageField(
+        upload_to=settings.OSCAR_IMAGE_FOLDER, max_length=255,
+        blank=True, null=True)
+    value_entity = GenericForeignKey(
+        'entity_content_type', 'entity_object_id')
+
+    entity_content_type = models.ForeignKey(
+        ContentType,
+        blank=True,
+        editable=False,
+        on_delete=models.CASCADE,
+        null=True)
+    entity_object_id = models.PositiveIntegerField(
+        null=True, blank=True, editable=False)
+
+    def _get_value(self):
+        value = getattr(self, 'value_%s' % self.option.type)
+        if hasattr(value, 'all'):
+            value = value.all()
+        return value
+
+    def _set_value(self, new_value):
+        attr_name = 'value_%s' % self.option.type
+
+        if self.option.is_option and isinstance(new_value, str):
+            # Need to look up instance of AttributeOption
+            new_value = self.option.option_group.options.get(
+                option=new_value)
+        elif self.option.is_multi_option:
+            getattr(self, attr_name).set(new_value)
+            return
+
+        setattr(self, attr_name, new_value)
+        return
+
+    value = property(_get_value, _set_value)
+
+    class Meta:
+        app_label = 'basket'
+        verbose_name = _('Line attribute')
+        verbose_name_plural = _('Line attributes')
+
+
+    def __str__(self):
+        return self.summary()
+
+    def summary(self):
+        """
+        Gets a string representation of both the option and it's value,
+        used e.g in product summaries.
+        """
+        return "%s: %s" % (self.option.name, self.value_as_text)
+
+    @property
+    def value_as_text(self):
+        """
+        Returns a string representation of the option's value. To customize
+        e.g. image option values, declare a _image_as_text property and
+        return something appropriate.
+        """
+        property_name = '_%s_as_text' % self.option.type
+        return getattr(self, property_name, self.value)
+
+    @property
+    def _multi_option_as_text(self):
+        return ', '.join(str(option) for
+                         option in self.value_multi_option.all())
+
+    @property
+    def _richtext_as_text(self):
+        return strip_tags(self.value)
+
+    @property
+    def _entity_as_text(self):
+        """
+        Returns the unicode representation of the related model. You likely
+        want to customise this (and maybe _entity_as_html) if you use entities.
+        """
+        return str(self.value)
+
+    @property
+    def value_as_html(self):
+        """
+        Returns a HTML representation of the option's value. To customize
+        e.g. image option values, declare a _image_as_html property and
+        return e.g. an <img> tag.  Defaults to the _as_text representation.
+        """
+        property_name = '_%s_as_html' % self.option.type
+        return getattr(self, property_name, self.value_as_text)
+
+    @property
+    def _richtext_as_html(self):
+        return mark_safe(self.value)
 
     class Meta:
         abstract = True

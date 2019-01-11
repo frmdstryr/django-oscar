@@ -34,9 +34,10 @@ def get_annotated_list(depth=None, parent=None):
             start_depth = node_depth
         if max_depth is not None and node_depth > max_depth:
             continue
-        
+
         # If this node or any parent nodes are not enabled skip this node
-        if node.is_disabled():
+        node = node.specific
+        if not isinstance(node, Category) or node.is_disabled():
             continue
 
         # Update previous node's info
@@ -53,5 +54,4 @@ def get_annotated_list(depth=None, parent=None):
         # close last leaf
         info['num_to_close'] = list(range(0, prev_depth - start_depth))
         info['has_children'] = prev_depth > prev_depth
-
     return annotated_categories

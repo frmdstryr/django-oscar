@@ -8,13 +8,18 @@ from django.utils.translation import gettext_lazy as _
 
 from oscar.apps.voucher.utils import get_unused_code
 from oscar.core.compat import AUTH_USER_MODEL
-from oscar.core.loading import get_model, get_class
+from oscar.core.loading import get_model
 
 
-Model = get_class('core.models', 'Model')
+from wagtail.admin.edit_handlers import (
+    FieldPanel, MultiFieldPanel, TabbedInterface, ObjectList, InlinePanel
+)
+from wagtail.core.fields import RichTextField
+from modelcluster.fields import ParentalKey, ParentalOneToOneField
+from modelcluster.models import ClusterableModel
 
 
-class AbstractVoucherSet(Model):
+class AbstractVoucherSet(ClusterableModel):
     """A collection of vouchers (potentially auto-generated)
 
     a VoucherSet is a group of voucher that are generated
@@ -36,15 +41,28 @@ class AbstractVoucherSet(Model):
     count = models.PositiveIntegerField(verbose_name=_('Number of vouchers'))
     code_length = models.IntegerField(
         verbose_name=_('Length of Code'), default=12)
-    description = models.TextField(verbose_name=_('Description'))
+    description = RichTextField(verbose_name=_('Description'))
     date_created = models.DateTimeField(auto_now_add=True)
     start_datetime = models.DateTimeField(_('Start datetime'))
     end_datetime = models.DateTimeField(_('End datetime'))
 
-    offer = models.OneToOneField(
+    offer = ParentalOneToOneField(
         'offer.ConditionalOffer', related_name='voucher_set',
         verbose_name=_("Offer"), limit_choices_to={'offer_type': "Voucher"},
         on_delete=models.CASCADE, null=True, blank=True)
+
+    edit_handler = TabbedInterface([
+        ObjectList([
+            FieldPanel('name'),
+            FieldPanel('count'),
+            FieldPanel('description'),
+            FieldPanel('start_datetime'),
+            FieldPanel('end_datetime'),
+        ], heading=_('Details')),
+        ObjectList([
+            InlinePanel('offer')],
+            heading=_('Offer')),
+    ])
 
     class Meta:
         abstract = True
@@ -110,7 +128,7 @@ class AbstractVoucherSet(Model):
         return value['result']
 
 
-class AbstractVoucher(Model):
+class AbstractVoucher(ClusterableModel):
     """
     A voucher.  This is simply a link to a collection of offers.
 
@@ -154,7 +172,7 @@ class AbstractVoucher(Model):
         _("Total discount"), decimal_places=2, max_digits=12,
         default=Decimal('0.00'))
 
-    voucher_set = models.ForeignKey(
+    voucher_set = ParentalKey(
         'voucher.VoucherSet', null=True, blank=True, related_name='vouchers',
         on_delete=models.CASCADE
     )
@@ -272,14 +290,14 @@ class AbstractVoucher(Model):
         return self.offers.all()[0].benefit
 
 
-class AbstractVoucherApplication(Model):
+class AbstractVoucherApplication(models.Model):
     """
     For tracking how often a voucher has been used in an order.
 
     This is used to enforce the voucher usage mode in
     Voucher.is_available_to_user, and created in Voucher.record_usage.
     """
-    voucher = models.ForeignKey(
+    voucher = ParentalKey(
         'voucher.Voucher',
         on_delete=models.CASCADE,
         related_name="applications",

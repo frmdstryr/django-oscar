@@ -2,15 +2,10 @@ from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from oscar.core.loading import get_class
 
+class AbstractConfiguration(models.Model):
+    """ System configuration
 
-Model = get_class('core.models', 'Model')
-
-
-class AbstractConfiguration(Model):
-    """ System configuration 
-    
     """
     shop_name = models.CharField(max_length=64)
     shop_tagline = models.CharField(max_length=256)
@@ -19,14 +14,14 @@ class AbstractConfiguration(Model):
         default='img/ui/image_not_found.jpg',
         max_length=255)
     homepage_url = models.CharField(max_length=256, default='/')
-    
+
     #: Use css by default
     use_less = models.BooleanField(default=False)
-    
+
     #: Analytics ID
     google_analytics_id = models.CharField(max_length=256, blank=True,
                                            null=True)
-    
+
     #: Date formats for dashboard and UI
     shop_date_format = models.CharField(max_length=32, default="yy-mm-dd")
     shop_time_format = models.CharField(max_length=32, default="hh:ii")
@@ -34,19 +29,19 @@ class AbstractConfiguration(Model):
         max_length=32,
         default="yy-mm-dd hh:ii"
     )
-    
+
     #: Time for date picker
     shop_date_picker_minute_step = models.PositiveSmallIntegerField(default=15)
-    
+
     #: Dashboard editor settings
     dashboard_editor_plugins = models.CharField(
         max_length=255,
-        default="link lists", 
+        default="link lists",
         blank=True
     )
     dashboard_editor_menubar = models.CharField(
         max_length=255,
-        default="", 
+        default="",
         blank=True
     )
     dashboard_editor_toolbar_layout = models.CharField(
@@ -59,12 +54,12 @@ class AbstractConfiguration(Model):
         default="copy cut paste link",
         blank=True
     )
-    
+
     class Meta:
         abstract = True
         app_label = 'system'
         verbose_name = _("Configuration")
-    
+
     def as_context(self):
         return {
             'shop_name': self.shop_name,

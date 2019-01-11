@@ -25,7 +25,7 @@
     {% with category=product.categories.all.0 %}
         {% for c in category.get_ancestors_and_self %}
         <li>
-            <a href="{{ c.get_absolute_url }}">{{ c.name }}</a>
+            <a href="{{ c.get_absolute_url }}">{{ c.title }}</a>
         </li>
         {% endfor %}
         <li class="active">{{ product.get_title }}</li>
@@ -64,7 +64,7 @@
             pops out when clicked.  A bit like the Django-Debug-Toolbar button
             {% endcomment %}
             {% if user.is_staff %}
-                <a class="pull-right hidden-xs" href="{% url 'dashboard:catalogue-product' pk=product.id %}"><small><i class="icon-edit"></i> {% trans "Edit this product" %}</small></a>
+                <a class="pull-right hidden-xs" href="{% url 'catalogue_product_modeladmin_edit' instance_pk=product.id %}"><small><i class="icon-edit"></i> {% trans "Edit this product" %}</small></a>
             {% endif %}
             <h1>{{ product.get_title }}</h1>
 
@@ -140,7 +140,7 @@
             </tr>
         {% endif %}
         {% for av in product.attribute_values.all %}
-            {% if av.attribute.display %} 
+            {% if av.attribute.display %}
             <tr>
                 <th>{{ av.attribute.name }}</th>
                 <td>{{ av.value_as_html }}</td>

@@ -2,6 +2,7 @@ import logging
 import os
 from datetime import date, datetime
 
+from django import forms
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -18,15 +19,34 @@ from django.utils.html import strip_tags
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import get_language, pgettext_lazy
-from treebeard.mp_tree import MP_Node
 
 from oscar.core.loading import get_class, get_model
 from oscar.core.utils import slugify
 from oscar.core.validators import non_python_keyword
+from oscar.core.edit_handlers import ReadOnlyPanel
 from oscar.models.fields import AutoSlugField, NullCharField
 from oscar.models.fields.slugfield import SlugField
 
-Model = get_class('core.models', 'Model')
+
+from wagtail.admin.edit_handlers import (
+    FieldPanel, InlinePanel, MultiFieldPanel, FieldRowPanel,
+    TabbedInterface, ObjectList
+)
+from wagtailautocomplete.edit_handlers import AutocompletePanel
+from wagtail.core import blocks
+from wagtail.core.fields import RichTextField, StreamField
+from wagtail.core.models import Orderable
+from wagtail.images.edit_handlers import ImageChooserPanel
+from wagtail.images.models import AbstractImage
+
+from modelcluster.fields import ParentalKey
+from modelcluster.models import ClusterableModel
+
+
+ProductAttributesPanel = get_class(
+    'catalogue.edit_handlers', 'ProductAttributesPanel')
+
+Page = get_model('wagtailcore', 'Page')
 BrowsableProductManager = get_class('catalogue.managers', 'BrowsableProductManager')
 ProductQuerySet = get_class('catalogue.managers', 'ProductQuerySet')
 ProductAttributesContainer = get_class(
@@ -34,7 +54,7 @@ ProductAttributesContainer = get_class(
 Selector = get_class('partner.strategy', 'Selector')
 
 
-class AbstractProductClass(Model):
+class AbstractProductClass(ClusterableModel):
     """
     Used for defining options and attributes for a subset of products.
     E.g. Books, DVDs and Toys. A product can only belong to one product class.
@@ -64,12 +84,31 @@ class AbstractProductClass(Model):
     options = models.ManyToManyField(
         'catalogue.Option', blank=True, verbose_name=_("Options"))
 
+    #: Admin panels
+    general_panels = [
+        FieldPanel('name'),
+        FieldPanel('requires_shipping'),
+        FieldPanel('track_stock'),
+    ]
+    options_panels = [
+        FieldPanel('options', widget=forms.CheckboxSelectMultiple)
+    ]
+    attribute_panels = [
+        InlinePanel('attributes', label=_('Product attribute'))
+    ]
+
+    edit_handler = TabbedInterface([
+        ObjectList(general_panels, heading=_('General')),
+        ObjectList(options_panels, heading=_('Add to Cart Options')),
+        ObjectList(attribute_panels, heading=_('Attributes')),
+    ])
+
     class Meta:
         abstract = True
         app_label = 'catalogue'
         ordering = ['name']
-        verbose_name = _("Product class")
-        verbose_name_plural = _("Product classes")
+        verbose_name = _("Product type")
+        verbose_name_plural = _("Product types")
 
     def __str__(self):
         return self.name
@@ -79,7 +118,7 @@ class AbstractProductClass(Model):
         return self.attributes.exists()
 
 
-class AbstractCategory(MP_Node):
+class AbstractCategory(Page):
     """
     A product category. Merely used for navigational purposes; has no
     effects on business logic.
@@ -90,21 +129,30 @@ class AbstractCategory(MP_Node):
     #: When the Category model is overwriten to provide CMS content, defining
     #: this avoids fetching a lot of unneeded extra data from the database.
     COMPARISON_FIELDS = ('pk', 'path', 'depth')
-    
-    name = models.CharField(_('Name'), max_length=255, db_index=True)
-    description = models.TextField(_('Description'), blank=True)
-    image = models.ImageField(_('Image'), upload_to='categories', blank=True,
-                              null=True, max_length=255)
-    slug = SlugField(_('Slug'), max_length=255, db_index=True)
-    is_enabled = models.BooleanField(
-        default=True, help_text=_('If this is unchecked, this category will '
-                                  'not be visible on the site.'))
+    description = RichTextField(_('Description'), blank=True)
+    image = models.ForeignKey(
+        'wagtailimages.Image',
+        blank=True, null=True,
+        on_delete=models.SET_NULL,
+        related_name='categories',
+        verbose_name=_("Image"))
 
     _slug_separator = '/'
     _full_name_separator = ' > '
 
+    is_enabled = models.BooleanField(
+        default=True, help_text=_('If this is unchecked, this category will '
+                                  'not be visible on the site.'))
+
+    def autocomplete_label(self):
+        return self.full_name
+
     def __str__(self):
         return self.full_name
+
+    @property
+    def name(self):
+        return self.title
 
     @property
     def full_name(self):
@@ -116,7 +164,7 @@ class AbstractCategory(MP_Node):
         CharField and is hence kept for backwards compatibility. It's also
         sufficiently useful to keep around.
         """
-        names = [category.name for category in self.get_ancestors_and_self()]
+        names = [category.title for category in self.get_ancestors_and_self()]
         return self._full_name_separator.join(names)
 
     @property
@@ -151,6 +199,10 @@ class AbstractCategory(MP_Node):
             self.slug = self.generate_slug()
 
         super().save(*args, **kwargs)
+
+    def get_ancestors(self, *args, **kwargs):
+        # Skip root category
+        return super().get_ancestors(*args, **kwargs).exclude(title="Root")
 
     def get_ancestors_and_self(self):
         """
@@ -191,10 +243,25 @@ class AbstractCategory(MP_Node):
             cache.set(cache_key, url)
         return url
 
+    content_panels = Page.content_panels + [
+        FieldPanel('description', classname='full'),
+        FieldPanel('is_enabled'),
+        ImageChooserPanel('image'),
+    ]
+    product_panels = [
+        InlinePanel('products_set', label=_('Products')),
+    ]
+
+    edit_handler = TabbedInterface([
+        ObjectList(content_panels, heading=_('Content')),
+        ObjectList(product_panels, heading=_('Products')),
+        ObjectList(Page.promote_panels, heading=_('Promote')),
+        ObjectList(Page.settings_panels, heading=_('Settings')),
+    ])
+
     class Meta:
         abstract = True
         app_label = 'catalogue'
-        ordering = ['path']
         verbose_name = _('Category')
         verbose_name_plural = _('Categories')
 
@@ -203,29 +270,34 @@ class AbstractCategory(MP_Node):
 
     def get_num_children(self):
         return self.get_children().count()
-    
+
     def is_disabled(self):
-        """ Check if this node or any parents of this node have is_enabled 
+        """ Check if this node or any parents of this node have is_enabled
         set to False.
         """
         node = self
         while node is not None:
-            if not node.is_enabled:
+            if not node.live:
+                return True
+            node = node.specific
+            if hasattr(node, 'is_enabled') and not node.is_enabled:
                 return True
             node = node.get_parent()
         return False
 
 
-class AbstractProductCategory(Model):
+class AbstractProductCategory(models.Model):
     """
     Joining model between products and categories. Exists to allow customising.
     """
-    product = models.ForeignKey(
+    product = ParentalKey(
         'catalogue.Product',
+        related_name='category_set',
         on_delete=models.CASCADE,
         verbose_name=_("Product"))
-    category = models.ForeignKey(
+    category = ParentalKey(
         'catalogue.Category',
+        related_name='products_set',
         on_delete=models.CASCADE,
         verbose_name=_("Category"))
 
@@ -241,7 +313,7 @@ class AbstractProductCategory(Model):
         return "<productcategory for product '%s'>" % self.product
 
 
-class AbstractProduct(Model):
+class AbstractProduct(ClusterableModel):
     """
     The base product object
 
@@ -262,6 +334,7 @@ class AbstractProduct(Model):
         (PARENT, _('Parent product')),
         (CHILD, _('Child product'))
     )
+
     structure = models.CharField(
         _("Product structure"), max_length=10, choices=STRUCTURE_CHOICES,
         default=STANDALONE)
@@ -289,7 +362,7 @@ class AbstractProduct(Model):
     title = models.CharField(pgettext_lazy('Product title', 'Title'),
                              max_length=255, blank=True)
     slug = models.SlugField(_('Slug'), max_length=255, unique=False)
-    description = models.TextField(_('Description'), blank=True)
+    description = RichTextField(_('Description'), blank=True)
 
     #: "Kind" of product, e.g. T-Shirt, Book, etc.
     #: None for child products, they inherit their parent's product class
@@ -297,6 +370,7 @@ class AbstractProduct(Model):
         'catalogue.ProductClass',
         null=True,
         blank=True,
+        editable=False,
         on_delete=models.PROTECT,
         verbose_name=_('Product type'), related_name="products",
         help_text=_("Choose what type of product this is"))
@@ -317,8 +391,7 @@ class AbstractProduct(Model):
     recommended_products = models.ManyToManyField(
         'catalogue.Product', through='ProductRecommendation', blank=True,
         verbose_name=_("Recommended products"),
-        help_text=_("These are products that are recommended to accompany the "
-                    "main product."))
+    )
 
     # Denormalised product rating - used by reviews app.
     # Product has no ratings if rating is None
@@ -357,6 +430,61 @@ class AbstractProduct(Model):
     # browsable property is deprecated and will be removed in Oscar 2.1
     # Use Product.objects.browsable() instead.
     browsable = BrowsableProductManager()
+
+    # Admin
+    general_panels = [
+        FieldPanel('title', classname="full title"),
+        FieldPanel('description', classname="full"),
+        FieldPanel('is_enabled'),
+
+    ]
+    inventory_panels = [
+        InlinePanel('stockrecords', label=_('Stock Record')),
+    ]
+    images_panels = [
+        InlinePanel('images', label=_('Product Image')),
+    ]
+
+    attributes_panels = [
+        ProductAttributesPanel('attribute_values', label=_("Attributes"))
+    ]
+
+    categories_panels = [
+        # Wagtail's InlinePanel doesn't support M2M fields and even though
+        # AutocompletePanel does it won't save because they use through
+        # models. Thankfully we can use the through model related name.
+        InlinePanel('category_set',
+                    panels=[FieldPanel('category')],
+                    min_num=1, label=_('Categories'))
+    ]
+
+    options_panels = [
+        FieldPanel('product_options', widget=forms.CheckboxSelectMultiple)
+    ]
+
+    related_panels = [
+        # See comment for categories panels, same situation here
+        InlinePanel('recommended_set',
+                    panels=[FieldPanel('primary')],
+                    label=_('Recommendations')),
+    ]
+
+    settings_panels = [
+        FieldPanel('slug'),
+        FieldPanel('is_discountable'),
+        ReadOnlyPanel('product_class'),
+    ]
+
+    edit_handler = TabbedInterface([
+            ObjectList(general_panels, heading='General'),
+            ObjectList(images_panels, heading='Images'),
+            ObjectList(inventory_panels, heading='Inventory'),
+            ObjectList(categories_panels, heading='Categories'),
+            ObjectList(attributes_panels, heading='Attributes'),
+            ObjectList(options_panels, heading='Add to Cart Options'),
+            ObjectList(related_panels, heading='Upsales'),
+            ObjectList(settings_panels, heading='Settings'),
+    ])
 
     class Meta:
         abstract = True
@@ -590,6 +718,12 @@ class AbstractProduct(Model):
             return self.parent.images.all()
         return self.images.all()
 
+    @property
+    def thumbnail_image(self):
+        product_image = self.get_all_images().first()
+        if product_image:
+            return product_image.image
+
     def primary_image(self):
         """
         Returns the primary image for a product. Usually used when one can
@@ -597,11 +731,11 @@ class AbstractProduct(Model):
         """
         images = self.get_all_images()
         ordering = self.images.model.Meta.ordering
-        if not ordering or ordering[0] != 'display_order':
+        if not ordering or ordering[0] != 'sort_order':
             # Only apply order_by() if a custom model doesn't use default
             # ordering. Applying order_by() busts the prefetch cache of
             # the ProductManager
-            images = images.order_by('display_order')
+            images = images.order_by('sort_order')
         try:
             return images[0]
         except IndexError:
@@ -665,43 +799,41 @@ class AbstractProduct(Model):
     @property
     def sorted_recommended_products(self):
         """Keeping order by recommendation ranking."""
-        return [r.recommendation for r in self.primary_recommendations
-                                              .select_related('recommendation').all()]
+        return [r.recommendation for r in self.recommended_products.all()]
 
 
-class AbstractProductRecommendation(Model):
+class AbstractProductRecommendation(Orderable):
     """
     'Through' model for product recommendations
     """
-    primary = models.ForeignKey(
+    primary = ParentalKey(
         'catalogue.Product',
         on_delete=models.CASCADE,
-        related_name='primary_recommendations',
+        related_name='primary_recomendations',
         verbose_name=_("Primary product"))
-    recommendation = models.ForeignKey(
+    recommendation = ParentalKey(
         'catalogue.Product',
+        related_name='recommended_set',
         on_delete=models.CASCADE,
-        verbose_name=_("Recommended product"))
-    ranking = models.PositiveSmallIntegerField(
-        _('Ranking'), default=0, db_index=True,
-        help_text=_('Determines order of the products. A product with a higher'
-                    ' value will appear before one with a lower ranking.'))
+        verbose_name=_("Recommended product"),
+        help_text=_("These are products that are recommended to accompany the "
+                    "main product."))
 
     class Meta:
         abstract = True
         app_label = 'catalogue'
-        ordering = ['primary', '-ranking']
+        ordering = ['primary', '-sort_order']
         unique_together = ('primary', 'recommendation')
         verbose_name = _('Product recommendation')
         verbose_name_plural = _('Product recomendations')
 
 
-class AbstractProductAttribute(Model):
+class AbstractProductAttribute(ClusterableModel, Orderable):
     """
     Defines an attribute for a product class. (For example, number_of_pages for
     a 'book' class)
     """
-    product_class = models.ForeignKey(
+    product_class = ParentalKey(
         'catalogue.ProductClass',
         blank=True,
         on_delete=models.CASCADE,
@@ -760,9 +892,17 @@ class AbstractProductAttribute(Model):
         verbose_name=_("Option Group"),
         help_text=_('Select an option group if using type "Option" or "Multi Option"'))
     required = models.BooleanField(_('Required'), default=False)
-    
+
     # Display on frontend
     display = models.BooleanField(_('Display'), default=True)
+
+    panels = [
+        FieldPanel('name'),
+        FieldPanel('type'),
+        FieldPanel('required'),
+        FieldPanel('display'),
+        FieldPanel('option_group'),
+    ]
 
     class Meta:
         abstract = True
@@ -770,6 +910,12 @@ class AbstractProductAttribute(Model):
         ordering = ['code']
         verbose_name = _('Product attribute')
         verbose_name_plural = _('Product attributes')
+
+    def clean(self):
+        super().clean()
+        if (self.is_option or self.is_multi_option) and not self.option_group:
+            raise ValidationError(_(
+                "An option group is required when type is %s" % self.type))
 
     @property
     def is_option(self):
@@ -915,7 +1061,7 @@ class AbstractProductAttribute(Model):
     _validate_image = _validate_file
 
 
-class AbstractProductAttributeValue(Model):
+class AbstractProductAttributeValue(Orderable):
     """
     The "through" model for the m2m relationship between catalogue.Product and
     catalogue.ProductAttribute.  This specifies the value of the attribute for
@@ -923,11 +1069,11 @@ class AbstractProductAttributeValue(Model):
 
     For example: number_of_pages = 295
     """
-    attribute = models.ForeignKey(
+    attribute = ParentalKey(
         'catalogue.ProductAttribute',
         on_delete=models.CASCADE,
         verbose_name=_("Attribute"))
-    product = models.ForeignKey(
+    product = ParentalKey(
         'catalogue.Product',
         on_delete=models.CASCADE,
         related_name='attribute_values',
@@ -1048,7 +1194,7 @@ class AbstractProductAttributeValue(Model):
         return mark_safe(self.value)
 
 
-class AbstractAttributeOptionGroup(Model):
+class AbstractAttributeOptionGroup(ClusterableModel):
     """
     Defines a group of options that collectively may be used as an
     attribute type
@@ -1059,6 +1205,11 @@ class AbstractAttributeOptionGroup(Model):
 
     def __str__(self):
         return self.name
+
+    panels = [
+        FieldPanel('name'),
+        InlinePanel('options', min_num=1, label=_('Attribute option'))
+    ]
 
     class Meta:
         abstract = True
@@ -1072,12 +1223,12 @@ class AbstractAttributeOptionGroup(Model):
         return ", ".join(options)
 
 
-class AbstractAttributeOption(Model):
+class AbstractAttributeOption(Orderable):
     """
     Provides an option within an option group for an attribute type
     Examples: In a Language group, English, Greek, French
     """
-    group = models.ForeignKey(
+    group = ParentalKey(
         'catalogue.AttributeOptionGroup',
         on_delete=models.CASCADE,
         related_name='options',
@@ -1095,7 +1246,64 @@ class AbstractAttributeOption(Model):
         verbose_name_plural = _('Attribute options')
 
 
-class AbstractOption(Model):
+class AbstractAddToCartOptionGroup(ClusterableModel):
+    """
+    Defines a group of options that can be selected from when adding the
+    product to the cart.
+
+    For example, Color
+    """
+    name = models.CharField(_('Name'), max_length=128)
+
+    def __str__(self):
+        return self.name
+
+    panels = [
+        FieldPanel('name'),
+        InlinePanel('options', min_num=1, label=_('Add to cart option'))
+    ]
+
+    class Meta:
+        abstract = True
+        app_label = 'catalogue'
+        verbose_name = _('Add to cart option group')
+        verbose_name_plural = _('Add to cart option groups')
+
+    @property
+    def option_summary(self):
+        options = [o.option for o in self.options.all()]
+        return ", ".join(options)
+
+
+class AbstractAddToCartOption(Orderable):
+    """
+    Provides an option within an option group for an attribute type
+    Examples: In a Language group, English, Greek, French
+    """
+    group = ParentalKey(
+        'catalogue.AddToCartOptionGroup',
+        on_delete=models.CASCADE,
+        related_name='options',
+        verbose_name=_("Group"))
+    option = models.CharField(_('Option'), max_length=255)
+
+    # Price this option adds to the item price
+    price = models.DecimalField(
+        _("Price "), decimal_places=2, max_digits=12,
+        blank=True, null=True)
+
+    def __str__(self):
+        return self.option
+
+    class Meta:
+        abstract = True
+        app_label = 'catalogue'
+        unique_together = ('group', 'option')
+        verbose_name = _('Add to cart option value')
+        verbose_name_plural = _('Add to cart option values')
+
+
+class AbstractOption(Orderable, ClusterableModel):
     """
     An option that can be selected for a particular item when the product
     is added to the basket.
@@ -1111,19 +1319,75 @@ class AbstractOption(Model):
     code = AutoSlugField(_("Code"), max_length=128, unique=True,
                          populate_from='name')
 
-    REQUIRED, OPTIONAL = ('Required', 'Optional')
+    TEXT = "text"
+    INTEGER = "integer"
+    BOOLEAN = "boolean"
+    FLOAT = "float"
+    RICHTEXT = "richtext"
+    DATE = "date"
+    DATETIME = "datetime"
+    OPTION = "option"
+    MULTI_OPTION = "multi_option"
+    ENTITY = "entity"
+    FILE = "file"
+    IMAGE = "image"
     TYPE_CHOICES = (
-        (REQUIRED, _("Required - a value for this option must be specified")),
-        (OPTIONAL, _("Optional - a value for this option can be omitted")),
+        (TEXT, _("Text")),
+        (INTEGER, _("Integer")),
+        (BOOLEAN, _("True / False")),
+        (FLOAT, _("Float")),
+        (RICHTEXT, _("Rich Text")),
+        (DATE, _("Date")),
+        (DATETIME, _("Datetime")),
+        (OPTION, _("Option")),
+        (MULTI_OPTION, _("Multi Option")),
+        (ENTITY, _("Entity")),
+        (FILE, _("File")),
+        (IMAGE, _("Image")),
     )
-    type = models.CharField(_("Status"), max_length=128, default=REQUIRED,
-                            choices=TYPE_CHOICES)
+    type = models.CharField(
+        choices=TYPE_CHOICES, default=TYPE_CHOICES[0][0],
+        max_length=20, verbose_name=_("Type"))
+
+    option_group = models.ForeignKey(
+        'catalogue.AddToCartOptionGroup',
+        blank=True,
+        null=True,
+        on_delete=models.CASCADE,
+        related_name='product_options',
+        verbose_name=_("Option Group"),
+        help_text=_('Select an option group if using type "Option" or "Multi Option"'))
+    required = models.BooleanField(
+        _('Required'),
+        default=False,
+        help_text=_('Whether this option is required when adding to cart'))
+
+    # Price this option adds
+    price = models.DecimalField(
+        _("Price "), decimal_places=2, max_digits=12, blank=True, null=True,
+        help_text=_('Price that is added to the item when this option is used'))
+
+    panels = [
+        MultiFieldPanel([
+            FieldPanel('name'),
+            FieldPanel('type'),
+            FieldPanel('required'),
+            FieldPanel('price'),
+            FieldPanel('option_group'),
+        ], heading=_('Details'))
+    ]
 
     class Meta:
         abstract = True
         app_label = 'catalogue'
-        verbose_name = _("Option")
-        verbose_name_plural = _("Options")
+        verbose_name = _("Add to cart option")
+        verbose_name_plural = _("Add to cart options")
+
+    def clean(self):
+        super().clean()
+        if (self.is_option or self.is_multi_option) and not self.option_group:
+            raise ValidationError(_(
+                "An option group is required when type is %s" % self.type))
 
     def __str__(self):
         return self.name
@@ -1131,6 +1395,153 @@ class AbstractOption(Model):
     @property
     def is_required(self):
         return self.type == self.REQUIRED
+
+
+    @property
+    def is_required(self):
+        return self.required
+
+    @property
+    def is_option(self):
+        return self.type == self.OPTION
+
+    @property
+    def is_multi_option(self):
+        return self.type == self.MULTI_OPTION
+
+    @property
+    def is_file(self):
+        return self.type in [self.FILE, self.IMAGE]
+
+    def __str__(self):
+        return self.name
+
+    def _save_file(self, value_obj, value):
+        # File fields in Django are treated differently, see
+        # django.db.models.fields.FileField and method save_form_data
+        if value is None:
+            # No change
+            return
+        elif value is False:
+            # Delete file
+            value_obj.delete()
+        else:
+            # New uploaded file
+            value_obj.value = value
+            value_obj.save()
+
+    def _save_multi_option(self, value_obj, value):
+        # ManyToMany fields are handled separately
+        if value is None:
+            value_obj.delete()
+            return
+        try:
+            count = value.count()
+        except (AttributeError, TypeError):
+            count = len(value)
+        if count == 0:
+            value_obj.delete()
+        else:
+            value_obj.value = value
+            value_obj.save()
+
+    def _save_value(self, value_obj, value):
+        if value is None or value == '':
+            value_obj.delete()
+            return
+        if value != value_obj.value:
+            value_obj.value = value
+            value_obj.save()
+
+    def save_value(self, line, value):   # noqa: C901 too complex
+        LineAttribute = get_model('basket', 'LineAttribute')
+        try:
+            value_obj = line.attributes.get(option=self)
+        except LineAttribute.DoesNotExist:
+            # FileField uses False for announcing deletion of the file
+            # not creating a new value
+            delete_file = self.is_file and value is False
+            if value is None or value == '' or delete_file:
+                return
+            value_obj = LineAttribute.objects.create(
+                line=line, option=self)
+
+        if self.is_file:
+            self._save_file(value_obj, value)
+        elif self.is_multi_option:
+            self._save_multi_option(value_obj, value)
+        else:
+            self._save_value(value_obj, value)
+
+    def validate_value(self, value):
+        validator = getattr(self, '_validate_%s' % self.type)
+        validator(value)
+
+    # Validators
+    def _validate_text(self, value):
+        if not isinstance(value, str):
+            raise ValidationError(_("Must be str"))
+    _validate_richtext = _validate_text
+
+    def _validate_float(self, value):
+        try:
+            float(value)
+        except ValueError:
+            raise ValidationError(_("Must be a float"))
+
+    def _validate_integer(self, value):
+        try:
+            int(value)
+        except ValueError:
+            raise ValidationError(_("Must be an integer"))
+
+    def _validate_date(self, value):
+        if not (isinstance(value, datetime) or isinstance(value, date)):
+            raise ValidationError(_("Must be a date or datetime"))
+
+    def _validate_datetime(self, value):
+        if not isinstance(value, datetime):
+            raise ValidationError(_("Must be a datetime"))
+
+    def _validate_boolean(self, value):
+        if not type(value) == bool:
+            raise ValidationError(_("Must be a boolean"))
+
+    def _validate_entity(self, value):
+        if not isinstance(value, Model):
+            raise ValidationError(_("Must be a model instance"))
+
+    def _validate_multi_option(self, value):
+        try:
+            values = iter(value)
+        except TypeError:
+            raise ValidationError(
+                _("Must be a list or AddToCartOption queryset"))
+        # Validate each value as if it were an option
+        # Pass in valid_values so that the DB isn't hit multiple times per iteration
+        valid_values = self.option_group.options.values_list(
+            'option', flat=True)
+        for value in values:
+            self._validate_option(value, valid_values=valid_values)
+
+    def _validate_option(self, value, valid_values=None):
+        if not isinstance(value, get_model('catalogue', 'AddToCartOption')):
+            raise ValidationError(
+                _("Must be an AddToCartOption model object instance"))
+        if not value.pk:
+            raise ValidationError(_("AddToCartOption has not been saved yet"))
+        if valid_values is None:
+            valid_values = self.option_group.options.values_list(
+                'option', flat=True)
+        if value.option not in valid_values:
+            raise ValidationError(
+                _("%(enum)s is not a valid choice for %(attr)s") %
+                {'enum': value, 'attr': self})
+
+    def _validate_file(self, value):
+        if value and not isinstance(value, File):
+            raise ValidationError(_("Must be a file field"))
+    _validate_image = _validate_file
 
 
 class MissingProductImage(object):
@@ -1176,50 +1587,60 @@ class MissingProductImage(object):
                                            settings.MEDIA_ROOT))
 
 
-class AbstractProductImage(Model):
+class AbstractProductImage(Orderable):
     """
     An image of a product
     """
-    product = models.ForeignKey(
+    product = ParentalKey(
         'catalogue.Product',
         on_delete=models.CASCADE,
         related_name='images',
         verbose_name=_("Product"))
-    original = models.ImageField(
-        _("Original"), upload_to=settings.OSCAR_IMAGE_FOLDER, max_length=255)
-    caption = models.CharField(_("Caption"), max_length=200, blank=True)
+    image = models.ForeignKey(
+        'wagtailimages.Image',
+        on_delete=models.CASCADE,
+        related_name='products',
+        verbose_name=_("Image"))
 
-    #: Use display_order to determine which is the "primary" image
-    display_order = models.PositiveIntegerField(
-        _("Display order"), default=0, db_index=True,
-        help_text=_("An image with a display order of zero will be the primary"
-                    " image for a product"))
-    date_created = models.DateTimeField(_("Date created"), auto_now_add=True)
+    panels = [
+        FieldPanel('product'),
+        ImageChooserPanel('image'),
+    ]
 
     class Meta:
         abstract = True
         app_label = 'catalogue'
         # Any custom models should ensure that this ordering is unchanged, or
         # your query count will explode. See AbstractProduct.primary_image.
-        ordering = ["display_order"]
+        ordering = ['sort_order']
         verbose_name = _('Product image')
         verbose_name_plural = _('Product images')
 
     def __str__(self):
         return "Image of '%s'" % self.product
 
+    @property
+    def display_order(self):
+        # For backward compatibility
+        return self.sort_order
+
+    @property
+    def original(self):
+        # For backward compatibility
+        return self.image.file
+
     def is_primary(self):
         """
         Return bool if image display order is 0
         """
-        return self.display_order == 0
+        return self.sort_order == 0
 
     def delete(self, *args, **kwargs):
         """
-        Always keep the display_order as consecutive integers. This avoids
+        Always keep the sort_order as consecutive integers. This avoids
         issue #855.
         """
         super().delete(*args, **kwargs)
         for idx, image in enumerate(self.product.images.all()):
-            image.display_order = idx
+            image.sort_order = idx
             image.save()

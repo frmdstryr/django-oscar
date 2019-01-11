@@ -1,17 +1,24 @@
 import re
+import json
+from itertools import chain
 
 from django import forms
+from django.contrib.contenttypes.models import ContentType
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.forms.models import ModelChoiceIterator
 from django.forms.widgets import FileInput
 from django.forms.utils import flatatt
+from django.template.loader import render_to_string
 from django.utils import formats
 from django.utils.encoding import force_text
 from django.utils.html import escape, conditional_escape
 from django.utils.safestring import mark_safe
+from django.utils.translation import ugettext_lazy as _
 from django.template import loader
 
-from itertools import chain
+from oscar.core.loading import get_model
+
+from wagtail.admin.widgets import AdminChooser
 
 
 class ImageInput(FileInput):
@@ -292,8 +299,8 @@ class RemoteSelect(forms.Select):
 
 class MultipleRemoteSelect(RemoteSelect):
     allow_multiple_selected = True
-    
-    
+
+
 class SelectMultipleTransfer(forms.SelectMultiple):
     template_name = 'oscar/dashboard/widgets/select_transfer.html'
     verbose_name = ''
@@ -302,7 +309,7 @@ class SelectMultipleTransfer(forms.SelectMultiple):
     def render_opt(self, selected_choices, option_value, option_label):
         option_value = force_text(option_value)
         return (u'<option value="%s">%s</option>' % (
-            escape(option_value), 
+            escape(option_value),
             conditional_escape(force_text(option_label))),
             bool(option_value in selected_choices))
 
@@ -314,7 +321,7 @@ class SelectMultipleTransfer(forms.SelectMultiple):
             attrs['class'] += 'stacked'
         if value is None:
             value = []
-        
+
         final_attrs = self.build_attrs(attrs, extra_attrs={'name': name})
         selected_choices = set(force_text(v) for v in value)
         available_output = []
@@ -350,3 +357,35 @@ class SelectMultipleTransfer(forms.SelectMultiple):
         }
         return mark_safe(loader.render_to_string(self.template_name, context))
 
+
+
+
+class AdminProductChooser(AdminChooser):
+    target_content_type = None
+    choose_one_text = _('Choose a product')
+    choose_another_text = _('Choose another product')
+    link_to_chosen_text = _('Edit this product')
+
+    def __init__(self, **kwargs):
+        super(AdminProductChooser, self).__init__(**kwargs)
+        Product = get_model('catalogue', 'Product')
+        self.target_content_type = ContentType.objects.get_for_model(Product)
+
+    def render_html(self, name, value, attrs):
+        model_class = self.target_content_type.model_class()
+        instance, value = self.get_instance_and_id(model_class, value)
+
+        original_field_html = super(AdminProductChooser, self).render_html(
+            name, value, attrs)
+
+        return render_to_string(
+            "oscar/dashboard/widgets/product_chooser.html", {
+                'widget': self,
+                'original_field_html': original_field_html,
+                'attrs': attrs,
+                'value': value,
+                'product': instance,
+        })
+
+    def render_js_init(self, id_, name, value):
+        return "createProductChooser({id});".format(id=json.dumps(id_))

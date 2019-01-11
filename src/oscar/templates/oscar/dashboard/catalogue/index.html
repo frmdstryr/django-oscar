@@ -1,0 +1,12 @@
+{% extends "modeladmin/index.html" %}
+{% load i18n modeladmin_tags %}
+{% block header_extra %}
+    {% if user_can_create %}
+        <div class="right">
+            <div class="addbutton">
+                <!-- Products require a type so use a special dropdown button for this -->
+                {{ view.model_admin.add_button }}
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

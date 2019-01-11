@@ -6,14 +6,13 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
-from oscar.core.loading import get_model, get_class
+from oscar.core.loading import get_model
 from oscar.models.fields import ExtendedURLField
 
 # Linking models - these link promotions to content (eg pages, or keywords)
-Model = get_class('core.models', 'Model')
 
 
-class LinkedPromotion(Model):
+class LinkedPromotion(models.Model):
 
     # We use generic foreign key to link to a promotion model
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
@@ -83,7 +82,7 @@ class KeywordPromotion(LinkedPromotion):
     # Different model types for each type of promotion
 
 
-class AbstractPromotion(Model):
+class AbstractPromotion(models.Model):
     """
     Abstract base promotion that defines the interface
     that subclasses must implement.
@@ -279,7 +278,7 @@ class HandPickedProductList(AbstractProductList):
         verbose_name_plural = _("Hand Picked Product Lists")
 
 
-class OrderedProduct(Model):
+class OrderedProduct(models.Model):
 
     list = models.ForeignKey(
         'promotions.HandPickedProductList',

@@ -10,19 +10,21 @@ from oscar.core import validators
 from oscar.core.compat import AUTH_USER_MODEL
 from oscar.core.loading import get_class
 
+from modelcluster.fields import ParentalKey
+from modelcluster.models import ClusterableModel
 
-Model = get_class('core.models', 'Model')
+
 ProductReviewQuerySet = get_class('catalogue.reviews.managers', 'ProductReviewQuerySet')
 
 
-class AbstractProductReview(Model):
+class AbstractProductReview(ClusterableModel):
     """
     A review of a product
 
     Reviews can belong to a user or be anonymous.
     """
 
-    product = models.ForeignKey(
+    product = ParentalKey(
         'catalogue.Product', related_name='reviews', null=True,
         on_delete=models.CASCADE)
 
@@ -180,14 +182,14 @@ class AbstractProductReview(Model):
         return True, ""
 
 
-class AbstractVote(Model):
+class AbstractVote(models.Model):
     """
     Records user ratings as yes/no vote.
 
     * Only signed-in users can vote.
     * Each user can vote only once.
     """
-    review = models.ForeignKey(
+    review = ParentalKey(
         'reviews.ProductReview',
         on_delete=models.CASCADE,
         related_name='votes')

@@ -1,0 +1,17 @@
+{% extends "wagtailmodelchooser/modal_chooser.html" %}
+{% load thumbnail %}
+
+{% block chosen_state_view %}
+    <div class="title">{{ item.get_title }}</div>
+    {% if item.primary_image %}
+    <div class="image">
+        {% with image=item.primary_image %}
+            {% thumbnail image.original "x155" upscale=False as thumb %}
+            <img src="{{ thumb.url }}" alt="{{ item.get_title }}" class="thumbnail">
+            {% endthumbnail %}
+        {% endwith %}
+    </div>
+    {% endif %}
+{% endblock %}
+
+{% block edit_chosen_item_url %}{% if item %}{% url 'catalogue_product_modeladmin_edit' item.id %}{% endif %}{% endblock %}

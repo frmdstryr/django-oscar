@@ -1,3 +1,4 @@
+from django import forms
 from django.db import models, router
 from django.db.models import F, Value, signals
 from django.db.models.functions import Coalesce
@@ -12,11 +13,16 @@ from oscar.core.loading import get_class
 from oscar.core.utils import get_default_currency
 from oscar.models.fields import AutoSlugField
 
+from wagtail.admin.edit_handlers import (
+    FieldPanel, InlinePanel, MultiFieldPanel, FieldRowPanel, StreamFieldPanel,
+    PublishingPanel, RichTextFieldPanel, TabbedInterface, ObjectList
+)
+from wagtail.core.models import Orderable
+from modelcluster.fields import ParentalKey
+from modelcluster.models import ClusterableModel
 
-Model = get_class('core.models', 'Model')
 
-
-class AbstractPartner(Model):
+class AbstractPartner(ClusterableModel):
     """
     A fulfillment partner. An individual or company who can fulfil products.
     E.g. for physical goods, somebody with a warehouse and means of delivery.
@@ -35,6 +41,12 @@ class AbstractPartner(Model):
     users = models.ManyToManyField(
         AUTH_USER_MODEL, related_name="partners",
         blank=True, verbose_name=_("Users"))
+
+    panels = [
+        FieldPanel('name'),
+        FieldPanel('users', widget=forms.CheckboxSelectMultiple),
+        InlinePanel('addresses', label=_('Address')),
+    ]
 
     @property
     def display_name(self):
@@ -82,7 +94,7 @@ class AbstractPartner(Model):
         return self.display_name
 
 
-class AbstractStockRecord(Model):
+class AbstractStockRecord(Orderable):
     """
     A stock record.
 
@@ -92,12 +104,12 @@ class AbstractStockRecord(Model):
     Stockrecords are used by 'strategies' to determine availability and pricing
     information for the customer.
     """
-    product = models.ForeignKey(
+    product = ParentalKey(
         'catalogue.Product',
         on_delete=models.CASCADE,
         related_name="stockrecords",
         verbose_name=_("Product"))
-    partner = models.ForeignKey(
+    partner = ParentalKey(
         'partner.Partner',
         on_delete=models.CASCADE,
         verbose_name=_("Partner"),
@@ -268,7 +280,7 @@ class AbstractStockRecord(Model):
         return self.net_stock_level < self.low_stock_threshold
 
 
-class AbstractStockAlert(Model):
+class AbstractStockAlert(models.Model):
     """
     A stock alert. E.g. used to notify users when a product is 'back in stock'.
     """

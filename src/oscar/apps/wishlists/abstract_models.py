@@ -5,13 +5,11 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
 from oscar.core.compat import AUTH_USER_MODEL
-from oscar.core.loading import get_class
+from modelcluster.fields import ParentalKey
+from modelcluster.models import ClusterableModel
 
 
-Model = get_class('core.models', 'Model')
-
-
-class AbstractWishList(Model):
+class AbstractWishList(ClusterableModel):
     """
     Represents a user's wish lists of products.
 
@@ -106,11 +104,11 @@ class AbstractWishList(Model):
             line.save()
 
 
-class AbstractLine(Model):
+class AbstractLine(models.Model):
     """
     One entry in a wish list. Similar to order lines or basket lines.
     """
-    wishlist = models.ForeignKey(
+    wishlist = ParentalKey(
         'wishlists.WishList',
         on_delete=models.CASCADE,
         related_name='lines',

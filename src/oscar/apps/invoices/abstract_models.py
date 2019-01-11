@@ -2,19 +2,19 @@ from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
-from phonenumber_field.modelfields import PhoneNumberField
 
 from oscar.apps.address.abstract_models import AbstractAddress
-from oscar.core.loading import get_class
+from oscar.models.fields import PhoneNumberField, ParentalKey
 
 from . import app_settings
 from .storages import DocumentsStorage
 
 
-Model = get_class('core.models', 'Model')
+from modelcluster.models import ClusterableModel
 
 
-class AbstractLegalEntity(Model):
+
+class AbstractLegalEntity(ClusterableModel):
     """
     Represents LegalEntity - merchant (company or individual) which we issue
     invoice on behalf of.
@@ -29,7 +29,7 @@ class AbstractLegalEntity(Model):
 
     class Meta:
         abstract = True
-        app_label = 'oscar_invoices'
+        app_label = 'invoices'
         verbose_name = _('Legal Entity')
         verbose_name_plural = _('Legal Entities')
 
@@ -47,8 +47,8 @@ class AbstractLegalEntityAddress(AbstractAddress):
 
     Used in Invoices.
     """
-    legal_entity = models.ForeignKey(
-        'oscar_invoices.LegalEntity',
+    legal_entity = ParentalKey(
+        'invoices.LegalEntity',
         on_delete=models.CASCADE,
         related_name='addresses',
         verbose_name=_('Legal Entity'))
@@ -58,18 +58,18 @@ class AbstractLegalEntityAddress(AbstractAddress):
 
     class Meta:
         abstract = True
-        app_label = 'oscar_invoices'
+        app_label = 'invoices'
         verbose_name = _('Legal Entity Address')
         verbose_name_plural = _('Legal Entity Addresses')
 
 
-class AbstractInvoice(Model):
+class AbstractInvoice(models.Model):
     """
     An Invoice.
     """
 
-    legal_entity = models.ForeignKey(
-        'oscar_invoices.LegalEntity',
+    legal_entity = ParentalKey(
+        'invoices.LegalEntity',
         on_delete=models.CASCADE,
         related_name='invoices',
         verbose_name=_('Legal Entity'))
@@ -89,7 +89,7 @@ class AbstractInvoice(Model):
 
     class Meta:
         abstract = True
-        app_label = 'oscar_invoices'
+        app_label = 'invoices'
         verbose_name = _('Invoice')
         verbose_name_plural = _('Invoices')
 

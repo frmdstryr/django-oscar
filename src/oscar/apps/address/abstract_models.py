@@ -12,10 +12,14 @@ from oscar.core.compat import AUTH_USER_MODEL
 from oscar.core.loading import get_class
 from oscar.models.fields import UppercaseCharField
 
-Model = get_class('core.models', 'Model')
+from wagtail.admin.edit_handlers import (
+    FieldPanel, FieldRowPanel, MultiFieldPanel
+)
+from wagtail.core.models import Orderable
+from modelcluster.fields import ParentalKey
 
 
-class AbstractAddress(Model):
+class AbstractAddress(Orderable):
     """
     Superclass address object
 
@@ -247,6 +251,19 @@ class AbstractAddress(Model):
     hash_fields = ['salutation', 'line1', 'line2', 'line3', 'line4', 'state', 'postcode', 'country']
     base_fields = ['salutation', 'line1', 'line2', 'line3', 'city_state_zip', 'country']
 
+    panels = [
+        FieldPanel('title'),
+        FieldPanel('first_name'),
+        FieldPanel('last_name'),
+        FieldPanel('line1'),
+        FieldPanel('line2'),
+        FieldPanel('line3'),
+        FieldPanel('line4'),
+        FieldPanel('state'),
+        FieldPanel('postcode'),
+        FieldPanel('country'),
+    ]
+
     def __str__(self):
         return self.summary
 
@@ -368,7 +385,7 @@ class AbstractAddress(Model):
         """
         Returns set of field values within the salutation and country.
         """
-        field_values = [f.strip() for f in self.get_field_values(fields) 
+        field_values = [f.strip() for f in self.get_field_values(fields)
                         if f.strip()]
         return field_values
 
@@ -413,7 +430,7 @@ class AbstractAddress(Model):
         return self.get_address_field_values(self.base_fields)
 
 
-class AbstractCountry(Model):
+class AbstractCountry(Orderable):
     """
     International Organization for Standardization (ISO) 3166-1 Country list.
 
@@ -428,14 +445,11 @@ class AbstractCountry(Model):
         _('ISO 3166-1 numeric'), blank=True, max_length=3)
 
     #: The commonly used name; e.g. 'United Kingdom'
-    printable_name = models.CharField(_('Country name'), max_length=128, db_index=True)
+    printable_name = models.CharField(_('Country name'),
+                                      max_length=128, db_index=True)
     #: The full official name of a country
     #: e.g. 'United Kingdom of Great Britain and Northern Ireland'
     name = models.CharField(_('Official name'), max_length=128)
-
-    display_order = models.PositiveSmallIntegerField(
-        _("Display order"), default=0, db_index=True,
-        help_text=_('Higher the number, higher the country in the list.'))
 
     is_shipping_country = models.BooleanField(
         _("Is shipping country"), default=False, db_index=True)
@@ -445,7 +459,7 @@ class AbstractCountry(Model):
         app_label = 'address'
         verbose_name = _('Country')
         verbose_name_plural = _('Countries')
-        ordering = ('-display_order', 'printable_name',)
+        ordering = ('-sort_order', 'printable_name',)
 
     def __str__(self):
         return self.printable_name or self.name
@@ -494,6 +508,11 @@ class AbstractShippingAddress(AbstractAddress):
         help_text=_("Tell us anything we should know when delivering "
                     "your order."))
 
+    panels = AbstractAddress.panels + [
+        FieldPanel('phone_number'),
+        FieldPanel('notes'),
+    ]
+
     class Meta:
         abstract = True
         # ShippingAddress is registered in order/models.py
@@ -523,7 +542,7 @@ class AbstractUserAddress(AbstractShippingAddress):
     model, we allow users the ability to add/edit/delete from their address
     book without affecting orders already placed.
     """
-    user = models.ForeignKey(
+    user = ParentalKey(
         AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='addresses',
@@ -621,7 +640,7 @@ class AbstractPartnerAddress(AbstractAddress):
     A partner can have one or more addresses. This can be useful e.g. when
     determining US tax which depends on the origin of the shipment.
     """
-    partner = models.ForeignKey(
+    partner = ParentalKey(
         'partner.Partner',
         on_delete=models.CASCADE,
         related_name='addresses',

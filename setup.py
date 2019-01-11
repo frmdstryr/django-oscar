@@ -43,6 +43,11 @@ install_requires = [
     # Used for manipulating form field attributes in templates (eg: add
     # a css class)
     'django-widget-tweaks>=1.4.1',
+
+    # Wagtail
+    'wagtail>=2.0',
+    'wagtailmodelchooser>=0.3.0',
+    'wagtail-autocomplete>=0.1.1',
 ]
 
 docs_requires = [

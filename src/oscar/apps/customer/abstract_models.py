@@ -13,8 +13,9 @@ from oscar.core.compat import AUTH_USER_MODEL
 from oscar.core.loading import get_class
 from oscar.models.fields import AutoSlugField
 
+from modelcluster.models import ClusterableModel
 
-Model = get_class('core.models', 'Model')
+
 CommunicationTypeManager = get_class('customer.managers', 'CommunicationTypeManager')
 
 
@@ -47,14 +48,9 @@ class UserManager(auth_models.BaseUserManager):
         return u
 
 
-if issubclass(auth_models.AbstractBaseUser, Model):
-    AbstractUserBases = (
-        auth_models.AbstractBaseUser, auth_models.PermissionsMixin)
-else:
-    AbstractUserBases = (
-        Model, auth_models.AbstractBaseUser, auth_models.PermissionsMixin)
-
-class AbstractUser(*AbstractUserBases):
+class AbstractUser(ClusterableModel,
+                   auth_models.AbstractBaseUser,
+                   auth_models.PermissionsMixin):
     """
     An abstract base user suitable for use in Oscar projects.
 
@@ -112,7 +108,7 @@ class AbstractUser(*AbstractUserBases):
         self._migrate_alerts_to_user()
 
 
-class AbstractEmail(Model):
+class AbstractEmail(models.Model):
     """
     This is a record of all emails sent to a customer.
     Normally, we only record order-related emails.
@@ -144,7 +140,7 @@ class AbstractEmail(Model):
                 'email': self.email, 'subject': self.subject}
 
 
-class AbstractCommunicationEventType(Model):
+class AbstractCommunicationEventType(models.Model):
     """
     A 'type' of communication.  Like an order confirmation email.
     """
@@ -268,7 +264,7 @@ class AbstractCommunicationEventType(Model):
         return self.category == self.USER_RELATED
 
 
-class AbstractNotification(Model):
+class AbstractNotification(models.Model):
     recipient = models.ForeignKey(
         AUTH_USER_MODEL,
         db_index=True,
@@ -319,7 +315,7 @@ class AbstractNotification(Model):
         return self.date_read is not None
 
 
-class AbstractProductAlert(Model):
+class AbstractProductAlert(models.Model):
     """
     An alert for when a product comes back in stock
     """

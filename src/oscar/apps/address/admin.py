@@ -10,7 +10,7 @@ class UserAddressAdmin(admin.ModelAdmin):
 class CountryAdmin(admin.ModelAdmin):
     list_display = [
         '__str__',
-        'display_order'
+        'sort_order'
     ]
     list_filter = [
         'is_shipping_country'

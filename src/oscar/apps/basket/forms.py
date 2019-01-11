@@ -11,6 +11,82 @@ Basket = get_model('basket', 'basket')
 Product = get_model('catalogue', 'product')
 
 
+def _attr_text_field(attribute):
+    return forms.CharField(label=attribute.name,
+                           required=attribute.required)
+
+
+def _attr_textarea_field(attribute):
+    return forms.CharField(label=attribute.name,
+                           widget=forms.Textarea(),
+                           required=attribute.required)
+
+
+def _attr_integer_field(attribute):
+    return forms.IntegerField(label=attribute.name,
+                              required=attribute.required)
+
+
+def _attr_boolean_field(attribute):
+    return forms.BooleanField(label=attribute.name,
+                              required=attribute.required)
+
+
+def _attr_float_field(attribute):
+    return forms.FloatField(label=attribute.name,
+                            required=attribute.required)
+
+
+def _attr_date_field(attribute):
+    return forms.DateField(label=attribute.name,
+                           required=attribute.required,
+                           widget=forms.widgets.DateInput)
+
+
+def _attr_datetime_field(attribute):
+    return forms.DateTimeField(label=attribute.name,
+                               required=attribute.required,
+                               widget=DateTimePickerInput())
+
+
+def _attr_option_field(attribute):
+    return forms.ModelChoiceField(
+        label=attribute.name,
+        required=attribute.required,
+        queryset=attribute.option_group.options.all())
+
+
+def _attr_multi_option_field(attribute):
+    return forms.ModelMultipleChoiceField(
+        label=attribute.name,
+        required=attribute.required,
+        queryset=attribute.option_group.options.all())
+
+
+def _attr_entity_field(attribute):
+    # Product entities don't have out-of-the-box supported in the ProductForm.
+    # There is no ModelChoiceField for generic foreign keys, and there's no
+    # good default behaviour anyway; offering a choice of *all* model instances
+    # is hardly useful.
+    return None
+
+
+def _attr_numeric_field(attribute):
+    return forms.FloatField(label=attribute.name,
+                            required=attribute.required)
+
+
+def _attr_file_field(attribute):
+    return forms.FileField(
+        label=attribute.name, required=attribute.required)
+
+
+def _attr_image_field(attribute):
+    return forms.ImageField(
+        label=attribute.name, required=attribute.required)
+
+
+
 class BasketLineForm(forms.ModelForm):
     save_for_later = forms.BooleanField(
         initial=False, required=False, label=_('Save for Later'))
@@ -103,6 +179,23 @@ class BasketVoucherForm(forms.Form):
 
 
 class AddToBasketForm(forms.Form):
+
+    FIELD_FACTORIES = {
+        "text": _attr_text_field,
+        "richtext": _attr_textarea_field,
+        "integer": _attr_integer_field,
+        "boolean": _attr_boolean_field,
+        "float": _attr_float_field,
+        "date": _attr_date_field,
+        "datetime": _attr_datetime_field,
+        "option": _attr_option_field,
+        "multi_option": _attr_multi_option_field,
+        "entity": _attr_entity_field,
+        "numeric": _attr_numeric_field,
+        "file": _attr_file_field,
+        "image": _attr_image_field,
+    }
+
     quantity = forms.IntegerField(initial=1, min_value=1, label=_('Quantity'))
 
     def __init__(self, basket, product, *args, **kwargs):
@@ -165,11 +258,14 @@ class AddToBasketForm(forms.Form):
         This is designed to be overridden so that specific widgets can be used
         for certain types of options.
         """
-        self.fields[option.code] = forms.CharField(
-            label=option.name, required=option.is_required)
+        if option.type in ('option', 'multi_option'):
+            if option.option_group is None and not option.is_required:
+                return  # If no options exist ignore this field
+
+        factory = AddToBasketForm.FIELD_FACTORIES[option.type]
+        self.fields[option.code] = factory(option)
 
     # Cleaning
-
     def clean_child_id(self):
         try:
             child = self.parent_product.children.get(

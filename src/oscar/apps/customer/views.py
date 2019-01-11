@@ -185,7 +185,7 @@ class AccountAuthView(RegisterUserMixin, generic.TemplateView):
         # Redirect staff members to dashboard as that's the most likely place
         # they'll want to visit if they're logging in.
         if self.request.user.is_staff:
-            return reverse('dashboard:index')
+            return reverse('wagtailadmin_index')
 
         return settings.LOGIN_REDIRECT_URL
 

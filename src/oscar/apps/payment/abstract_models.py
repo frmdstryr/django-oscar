@@ -6,16 +6,15 @@ from django.utils.translation import gettext_lazy as _
 from oscar.core.compat import AUTH_USER_MODEL
 from oscar.core.loading import get_class
 from oscar.core.utils import get_default_currency
-from oscar.models.fields import AutoSlugField
+from oscar.models.fields import AutoSlugField, ParentalKey
 from oscar.templatetags.currency_filters import currency
 
 from . import bankcards
 
+from modelcluster.models import ClusterableModel
 
-Model = get_class('core.models', 'Model')
 
-
-class AbstractTransaction(Model):
+class AbstractTransaction(models.Model):
     """
     A transaction for a particular payment source.
 
@@ -28,7 +27,7 @@ class AbstractTransaction(Model):
     * A 'pre-auth' with a bankcard gateway
     * A 'settle' with a credit provider (see django-oscar-accounts)
     """
-    source = models.ForeignKey(
+    source = ParentalKey(
         'payment.Source',
         on_delete=models.CASCADE,
         related_name='transactions',
@@ -58,7 +57,7 @@ class AbstractTransaction(Model):
         verbose_name_plural = _("Transactions")
 
 
-class AbstractSource(Model):
+class AbstractSource(ClusterableModel):
     """
     A source of payment for an order.
 
@@ -70,7 +69,7 @@ class AbstractSource(Model):
     This source object tracks how much money has been authorised, debited and
     refunded, which is useful when payment takes place in multiple stages.
     """
-    order = models.ForeignKey(
+    order = ParentalKey(
         'order.Order',
         on_delete=models.CASCADE,
         related_name='sources',
@@ -202,7 +201,7 @@ class AbstractSource(Model):
         return self.amount_debited - self.amount_refunded
 
 
-class AbstractSourceType(Model):
+class AbstractSourceType(models.Model):
     """
     A type of payment source.
 
@@ -224,7 +223,7 @@ class AbstractSourceType(Model):
         return self.name
 
 
-class AbstractBankcard(Model):
+class AbstractBankcard(models.Model):
     """
     Model representing a user's bankcard.  This is used for two purposes:
 
