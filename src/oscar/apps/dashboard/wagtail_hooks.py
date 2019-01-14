@@ -22,3 +22,8 @@ def register_dashboard_panels(request, panels):
 @hooks.register('construct_homepage_summary_items', order=10)
 def register_dashboard_summary_items(request, summary_items):
     dashboard.construct_summary_items(request, summary_items)
+
+
+@hooks.register('construct_homepage_summary_items', order=10)
+def register_dashboard_summary_items(request, summary_items):
+    dashboard.construct_summary_items(request, summary_items)

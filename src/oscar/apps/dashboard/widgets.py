@@ -1,8 +1,21 @@
 import copy
 import re
 
-from django.forms import Widget
+from django.forms import Widget, MultipleHiddenInput
 from django.urls import reverse
+
+from wagtail.utils.widgets import WidgetWithScript
+
+
+class BulkActionHiddenInput(WidgetWithScript, MultipleHiddenInput):
+    """ Adds a script that will pull the selected checkboxes from the IndexView
+    result list and append them to the bulk edit form list.
+
+    """
+    class Media:
+        js = [
+            'oscar/js/oscar/bulk-actions.js',
+        ]
 
 
 class RelatedFieldWidgetWrapper(Widget):

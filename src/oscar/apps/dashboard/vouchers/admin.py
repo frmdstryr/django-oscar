@@ -17,6 +17,10 @@ class VouchersAdmin(DashboardAdmin):
     list_filter = ('usage', 'date_created')
     search_fields = ('name', 'code')
 
+    def get_queryset(self, request):
+        return self.model._default_manager.exclude(
+            offer_type=ConditionalOffer.VOUCHER)
+
 
 class VoucherSetsAdmin(DashboardAdmin
                        ):

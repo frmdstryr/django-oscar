@@ -59,7 +59,6 @@ OSCAR_CORE_APPS = [
     #'oscar.apps.dashboard.reviews',
     'oscar.apps.dashboard.vouchers',
     'oscar.apps.dashboard.communications',
-    'oscar.apps.dashboard.shipping',
     'oscar.apps.dashboard.system',
     # 3rd-party apps that oscar depends on
     'wagtail.contrib.routable_page',

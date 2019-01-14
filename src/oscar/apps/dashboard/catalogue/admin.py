@@ -1,5 +1,6 @@
 from django.conf.urls import url
 from django.contrib import messages
+from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse
 from django.utils.html import format_html
@@ -9,7 +10,9 @@ from oscar.apps.dashboard.base import (
     DashboardAdmin, DashboardURLHelper, DashboardButtonHelper
 )
 from oscar.core.loading import get_class, get_model
+from oscar.templatetags.currency_filters import currency
 from wagtail.contrib.modeladmin.mixins import ThumbnailMixin
+from wagtail.admin import messages
 
 
 ProductClass = get_model('catalogue', 'ProductClass')
@@ -101,8 +104,8 @@ class ProductAdmin(DashboardAdmin, ThumbnailMixin):
     menu_icon = 'cubes'
     dashboard_url = 'products'
     list_display = (
-        'id', 'admin_thumb', 'title', 'product_class', 'num_stockrecords',
-        'date_updated', 'is_enabled')
+        'id', 'admin_thumb', 'title', 'product_class', 'in_stock',
+        'price', 'date_updated', 'is_enabled')
     list_filter = ('stockrecords__partner', 'product_class', 'is_enabled',
                    'date_updated', 'date_created')
     search_fields = ('title', 'upc')
@@ -124,10 +127,59 @@ class ProductAdmin(DashboardAdmin, ThumbnailMixin):
     thumb_col_header_text = _('Product Image')
     thumb_image_field_name = 'thumbnail_image'
 
+    bulk_actions = ['set_disabled', 'set_enabled']
+
+    # =========================================================================
+    # Bulk actions
+    # =========================================================================
+    def do_bulk_action_set_disabled(self, request, form):
+        queryset = form.cleaned_data['selection']
+        result = queryset.filter(is_enabled=True).update(
+            is_enabled=False)
+        messages.success(request, _('%s products disabled' % result))
+
+    def do_bulk_action_set_enabled(self, request, form):
+        queryset = form.cleaned_data['selection']
+        result = queryset.filter(is_enabled=False).update(
+            is_enabled=True)
+        messages.success(request, _('%s products enabled' % result))
+
+    # =========================================================================
+    # Display fields
+    # =========================================================================
+    def in_stock(self, obj):
+        """ Get the in stock status
+
+        """
+        stockrecord = obj.stockrecords.all().first()
+        in_stock = False
+        icon = 'admin/img/icon-no.svg'
+        if stockrecord:
+            icon = 'admin/img/icon-yes.svg'
+            in_stock = True
+        return format_html('<img src="{}" alt="{}">', static(icon), in_stock)
+
+    def price(self, obj):
+        """ Get the price of the first stock record (if it  exists)
+
+        """
+        stockrecord = obj.stockrecords.all().first()
+        if not stockrecord:
+            return
+        return currency(stockrecord.price_excl_tax, stockrecord.price_currency)
+
+    # =========================================================================
+    # Admin customizations
+    # =========================================================================
+
     def get_product_classes(self):
         return ProductClass.objects.all()
 
     def add_button(self):
+        """ This button is used to choose which product class to create on
+        the index view.
+
+        """
         DropDownButton = self.add_button_class
         return DropDownButton(label=self.add_label, model_admin=self).render()
 
@@ -202,9 +254,24 @@ class ProductReviewAdmin(DashboardAdmin):
     dashboard_url = 'reviews'
     menu_label = _('Reviews')
     menu_icon = 'comments'
-    list_display = ('product', 'title', 'score', 'total_votes',
+    list_display = ('product', 'title', 'body', 'score', 'total_votes',
                     'reviewer_name', 'status', 'date_created')
     list_filter = ('score', 'status')
     search_fields = ('title', 'product__title', 'body')
     inspect_view_enabled = True
     restricted_actions = ('create', 'delete', 'edit')
+    bulk_actions = ['mark_approved', 'mark_rejected']
+
+    def do_bulk_action_mark_approved(self, request, form):
+        queryset = form.cleaned_data['selection']
+        result = queryset.filter(status=ProductReview.FOR_MODERATION).update(
+            status=ProductReview.APPROVED)
+        messages.success(request, _('%s reviews marked as approved' % result))
+
+    def do_bulk_action_mark_rejected(self, request, form):
+        queryset = form.cleaned_data['selection']
+        result = queryset.filter(status=ProductReview.FOR_MODERATION).update(
+            status=ProductReview.REJECTED)
+        messages.success(request, _('%s reviews marked as rejected' % result))
+
+

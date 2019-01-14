@@ -9,6 +9,8 @@ from wagtail.contrib.modeladmin.helpers import (
 )
 from wagtail.contrib.modeladmin.options import ModelAdmin, ModelAdminGroup
 
+from .mixins import BulkActionsMixin
+
 
 class DashboardURLHelper(AdminURLHelper):
     model_admin = None
@@ -85,7 +87,7 @@ class DashboardPermissionHelper(PermissionHelper):
         return super().user_can_delete_obj(user, obj)
 
 
-class DashboardAdmin(ModelAdmin):
+class DashboardAdmin(ModelAdmin, BulkActionsMixin):
     """ To add a new view create a method <action>_view and add it in
     the dashboard_views or instance_views list.
 
@@ -108,6 +110,8 @@ class DashboardAdmin(ModelAdmin):
     #: List of view types that require a url which accepts an instance_pk
     instance_views = ['edit', 'delete', 'inspect']
     inspect_view_class = get_class('dashboard.views', 'DetailView')
+    index_view_class = get_class('dashboard.views', 'ListView')
+    index_template_name = 'oscar/dashboard/index.html'
 
     #: Actions which are explicitly restricted from being performed on
     #: this model admin.
@@ -126,6 +130,27 @@ class DashboardAdmin(ModelAdmin):
             name = self.__class__.__name__
             raise RuntimeError("Only one instance of %s can exist,"
                                "please use instance()" % name)
+    def get_list_display(self, request):
+        """ Add an selection checkbox to each row
+
+        """
+        list_display = self.list_display
+        if self.get_bulk_actions():
+            return ('action_checkbox',) + list_display
+        return list_display
+
+    def get_list_display_add_buttons(self, request):
+        """
+        Return the name of the field/method from list_display where action
+        buttons should be added. Defaults to the first item from
+        get_list_display()
+        """
+        if self.list_display_add_buttons:
+            return self.list_display_add_buttons
+        list_display = self.get_list_display(request)
+        if list_display[0] == 'action_checkbox':
+            return list_display[1]
+        return list_display[0]
 
     @classmethod
     def instance(cls):

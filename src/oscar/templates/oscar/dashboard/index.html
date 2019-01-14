@@ -1,0 +1,23 @@
+{% extends "modeladmin/index.html" %}
+{% load i18n modeladmin_tags %}
+
+{% block css %}
+    {{ block.super }}
+    {% if form %}
+        {{ form.media.css }}
+    {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+    {{ block.super }}
+    {% if form %}
+        {{ form.media.js }}
+    {% endif %}
+{% endblock %}
+
+{% block header_extra %}
+    {{ block.super }}
+    {% if has_bulk_actions %}
+        {% include 'oscar/dashboard/partials/bulk_action_form.html' with form=form %}
+    {% endif %}
+{% endblock %}

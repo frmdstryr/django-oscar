@@ -1,0 +1,22 @@
+{% load i18n static %}
+<div class="left ">
+    <form id="changelist-actions" class="col bulk-action-form" action="{{ view.index_url }}" method="post">
+        <ul class="fields fields-inline">
+            <li class="required">
+                <div class="field choice_field text_input field-small iconfield">
+                    <label for="id_action" class="visuallyhidden">{% trans 'Action' %}</label>
+                    <div class="field-content">
+                        <div class="input">
+                            {% csrf_token %}
+                            {% for field in form %}
+                                {{ field  }}
+                            {% endfor %}
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+            </li>
+            <li class="submit"><input type="submit" value="Go" class="button"></li>
+        </ul>
+    </form>
+</div>

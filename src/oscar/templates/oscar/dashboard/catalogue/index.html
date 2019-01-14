@@ -1,6 +1,9 @@
-{% extends "modeladmin/index.html" %}
+{% extends "oscar/dashboard/index.html" %}
 {% load i18n modeladmin_tags %}
 {% block header_extra %}
+    {% if has_bulk_actions %}
+        {% include 'oscar/dashboard/partials/bulk_action_form.html' with form=form %}
+    {% endif %}
     {% if user_can_create %}
         <div class="right">
             <div class="addbutton">

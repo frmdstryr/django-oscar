@@ -25,6 +25,7 @@ class FulfillmentGroup(DashboardAdminGroup):
     items = (
         get_class('dashboard.orders.admin', 'OrderAdmin'),
         get_class('dashboard.partners.admin', 'PartnerAdmin'),
+        get_class('dashboard.partners.admin', 'StockAlertAdmin'),
     )
 
 

@@ -25,6 +25,10 @@ class OffersAdmin(DashboardAdmin):
                            'success' if active else 'danger',
                            'Yes' if active else 'No')
 
+    def get_queryset(self, request):
+        return self.model._default_manager.exclude(
+            offer_type=ConditionalOffer.VOUCHER)
+
 
 class RangesAdmin(DashboardAdmin):
     model = Range
