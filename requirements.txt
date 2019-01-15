@@ -30,3 +30,8 @@ ipython==7.2.0
 
 # Country data
 pycountry==18.5.26
+
+# Wagtail
+wagtail>=2.4
+wagtail-autocomplete==0.1.1
+wagtailmodelchooser==2.0.0
