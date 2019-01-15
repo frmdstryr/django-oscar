@@ -243,6 +243,7 @@ class AbstractBasket(ClusterableModel):
             defaults['price_incl_tax'] = stock_info.price.incl_tax
 
         line, created = self.lines.get_or_create(
+            basket=self,
             line_reference=line_ref,
             product=product,
             stockrecord=stock_info.stockrecord,

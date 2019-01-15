@@ -86,7 +86,6 @@ def _attr_image_field(attribute):
         label=attribute.name, required=attribute.required)
 
 
-
 class BasketLineForm(forms.ModelForm):
     save_for_later = forms.BooleanField(
         initial=False, required=False, label=_('Save for Later'))

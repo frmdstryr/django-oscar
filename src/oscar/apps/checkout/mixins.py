@@ -52,7 +52,7 @@ class OrderPlacementMixin(CheckoutSessionMixin):
     # Payment handling methods
     # ------------------------
 
-    def handle_payment(self, order_number, total, **kwargs):
+    def handle_payment(self, order, total, **kwargs):
         """
         Handle any payment processing and record payment sources and events.
 
@@ -251,7 +251,7 @@ class OrderPlacementMixin(CheckoutSessionMixin):
         order is submitted.
         """
         self.save_payment_details(order)
-        
+
         # Send confirmation message (normally an email)
         self.send_confirmation_message(order, self.communication_type_code)
 

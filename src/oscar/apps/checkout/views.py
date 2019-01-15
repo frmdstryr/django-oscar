@@ -403,7 +403,7 @@ class PaymentMethodView(CheckoutSessionMixin, generic.FormView):
         return PaymentRepository().get_payment_methods(
             basket=basket, user=self.request.user, order_total=order_total,
             request=self.request)
-    
+
     def form_valid(self, form):
         # Save the code for the chosen shipping method in the session
         # and continue to the next step.
@@ -475,9 +475,9 @@ class PaymentDetailsView(OrderPlacementMixin, generic.TemplateView):
     # If preview=True, then we render a preview template that shows all order
     # details ready for submission.
     preview = False
-    
+
     def check_basket_is_not_empty(self, request):
-        """ Attempt to restore the frozen submitted basket in 
+        """ Attempt to restore the frozen submitted basket in
         the case where a payment error occurs.
         """
         if request.basket.is_empty:
@@ -591,17 +591,17 @@ class PaymentDetailsView(OrderPlacementMixin, generic.TemplateView):
             return self.request.user.addresses.get(is_default_for_billing=True)
         except UserAddress.DoesNotExist:
             return self.request.user.addresses.all().first()
-    
+
     def get_previously_placed_order(self, order_number, basket):
         """ Try to lookup order that may have previously been placed but failed
         to complete due to a payment error or some other issue.
-        
+
         """
         if order_number is None:
             return None
         # Get the order with the given number that is not complete
         # It's possible for a checkout to complete but an error to occur
-        # after a successful payment. In this case we want to create a new 
+        # after a successful payment. In this case we want to create a new
         # order. If the basket has changed, a new order will be needed.
         try:
             order = Order._default_manager.get(
@@ -612,7 +612,7 @@ class PaymentDetailsView(OrderPlacementMixin, generic.TemplateView):
             return order
         except Order.DoesNotExist:
             return None
-    
+
     def submit(self, user, basket, shipping_address, shipping_method,  # noqa (too complex (10))
                shipping_charge, billing_address, order_total,
                payment_kwargs=None, order_kwargs=None):
@@ -647,7 +647,7 @@ class PaymentDetailsView(OrderPlacementMixin, generic.TemplateView):
             "Basket tax must be set before a user can place an order")
         assert shipping_charge.is_tax_known, (
             "Shipping charge tax must be set before a user can place an order")
-        
+
         # We generate the order number first as this will be used
         # in payment requests (ie before the order model has been
         # created).  We also save it in the session for multi-stage
@@ -655,7 +655,7 @@ class PaymentDetailsView(OrderPlacementMixin, generic.TemplateView):
         # the order on a different request).
         order_number = self.checkout_session.get_order_number()
         order = self.get_previously_placed_order(order_number, basket)
-        
+
         # If the order was not already placed
         if order is None:
             logger.info(
@@ -663,14 +663,14 @@ class PaymentDetailsView(OrderPlacementMixin, generic.TemplateView):
                 order_number, basket.id)
             order_number = self.generate_order_number(basket)
             self.checkout_session.set_order_number(order_number)
-            # Freeze the basket so it cannot be manipulated while the customer 
-            # is completing payment on a 3rd party site.  Also, store a 
-            # reference to the basket in the session so that we know which 
-            # basket to thaw if we get an unsuccessful payment response when 
+            # Freeze the basket so it cannot be manipulated while the customer
+            # is completing payment on a 3rd party site.  Also, store a
+            # reference to the basket in the session so that we know which
+            # basket to thaw if we get an unsuccessful payment response when
             # redirecting to a 3rd party site.
             self.freeze_basket(basket)
             self.checkout_session.set_submitted_basket(basket)
-            
+
             try:
                 # Create the order first because we don't want to charge
                 # a payment and have no order to back up the reason
@@ -701,17 +701,17 @@ class PaymentDetailsView(OrderPlacementMixin, generic.TemplateView):
                       "contact customer service if this problem persists")
 
         # Attempt to take a payment. At this point the order has been placed
-        # but is unpaid. The basket remains frozen and  it's contents cannot 
-        # be modified. 
+        # but is unpaid. The basket remains frozen and  it's contents cannot
+        # be modified.
         signals.pre_payment.send_robust(sender=self, view=self)
-        
+
         msg = 'Order #%s: Total: %s Payment: %s' % (
             order_number, order_total, payment_kwargs)
         self.add_checkout_event(
             order, CheckoutEvent.EVENT_PAYMENT_ATTEMPT, msg)
-        
+
         try:
-            self.handle_payment(order_number, order_total, **payment_kwargs)
+            self.handle_payment(order, order_total, **payment_kwargs)
         except RedirectRequired as e:
             # Redirect required (eg PayPal, 3DS)
             msg = "Order #%s: redirecting to %s" % (order_number, e.url)
@@ -740,7 +740,7 @@ class PaymentDetailsView(OrderPlacementMixin, generic.TemplateView):
             # It makes sense to configure the checkout logger to
             # mail admins on an error as this issue warrants some further
             # investigation.
-            
+
             # Save checkout status
             exc_info = traceback.format_exc()
             msg = "Order #%s: payment error (%s)" % (order_number, exc_info)
@@ -765,10 +765,10 @@ class PaymentDetailsView(OrderPlacementMixin, generic.TemplateView):
         # If all is ok with payment, try and place order
         msg = "Order #%s: payment successful" % order_number
         logger.info(msg)
-        
+
         # Save checkout status
         self.add_checkout_event(order, CheckoutEvent.EVENT_COMPLETE, msg)
-        
+
         # Now redirect save
         return self.handle_successful_order(order)
 
