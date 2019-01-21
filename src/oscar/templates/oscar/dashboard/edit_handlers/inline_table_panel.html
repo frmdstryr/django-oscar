@@ -1,0 +1,55 @@
+{% load i18n %}
+{% load wagtailadmin_tags  %}
+
+{{ self.formset.management_form }}
+
+{% if self.formset.non_form_errors %}
+    <li class="error-message">
+        {% for error in self.formset.non_form_errors %}
+            <span>{{ error|escape }}</span>
+        {% endfor %}
+    </li>
+{% endif %}
+
+<table class="listing" id="id_{{ self.formset.prefix }}-FORMS">
+    <thead>
+        <tr>
+            <th><input type="checkbox" class="bulk-action select-all" /></th>
+            {% if self.headings %}
+                {% for heading in self.headings %}
+                    <th>{{ heading }}</th>
+                {% endfor %}
+            {% else %}
+                {% with self.children|first as child %}
+                    {% for field in child.children %}
+                        <th>{{ field.heading }}</th>
+                    {% endfor %}
+                {% endwith %}
+            {% endif %}
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for child in self.children %}
+            {% block child_form %}
+                {% include "oscar/dashboard/edit_handlers/inline_table_panel_child.html" with child=child can_edit=self.can_edit_existing %}
+            {% endblock %}
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if self.can_add_new %}
+    <script type="text/django-form-template" id="id_{{ self.formset.prefix }}-EMPTY_FORM_TEMPLATE">
+    {% escapescript %}
+        {% block empty_child_form %}
+            {% include "oscar/dashboard/edit_handlers/inline_table_panel_child.html" with child=self.empty_child empty=True  can_edit=True can_delete=True %}
+        {% endblock %}
+    {% endescapescript %}
+    </script>
+
+    <p class="add">
+        <a class="button bicolor icon icon-plus" id="id_{{ self.formset.prefix }}-ADD">
+            {% blocktrans with label=self.label|lower %}Add {{ label }}{% endblocktrans %}
+        </a>
+    </p>
+{% endif %}

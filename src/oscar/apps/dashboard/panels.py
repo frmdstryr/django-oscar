@@ -72,7 +72,7 @@ class DashboardList(DashboardPanel):
 
 class DashboardSummaryItem(SummaryItem):
     model_admin = None
-    template = 'oscar/dashboard/partials/summary_item.html'
+    template = 'oscar/dashboard/partials/dashboard_summary_item.html'
 
     def get_queryset(self):
         return self.model_admin.get_queryset(self.request)

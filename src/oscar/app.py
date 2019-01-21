@@ -16,7 +16,6 @@ import wagtail.core.urls
 import wagtail.documents.urls
 
 from wagtailautocomplete.urls.admin import urlpatterns as autocomplete_admin_urls
-from wagtailmodelchooser.urls import urlpatterns as modelchooser_urls
 
 
 class Shop(Application):
@@ -73,7 +72,6 @@ class Shop(Application):
                 name='password-reset-complete'),
 
             url(r'^admin/autocomplete/', include(autocomplete_admin_urls)),
-            url(r'^dashboard/', include(modelchooser_urls)),
 
             url(r'', include(wagtail.core.urls)),
         ]

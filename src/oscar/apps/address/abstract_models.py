@@ -572,6 +572,11 @@ class AbstractUserAddress(AbstractShippingAddress):
                             editable=False)
     date_created = models.DateTimeField(_("Date Created"), auto_now_add=True)
 
+    panels = [
+        FieldPanel('is_default_for_shipping'),
+        FieldPanel('is_default_for_billing'),
+    ] + AbstractShippingAddress.panels
+
     def save(self, *args, **kwargs):
         """
         Save a hash of the address fields

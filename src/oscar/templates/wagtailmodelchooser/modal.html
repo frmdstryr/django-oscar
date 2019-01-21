@@ -1,0 +1,23 @@
+<header class="nice-padding hasform">
+	<div class="row">
+		<div class="left">
+			<div class="col">
+				{% block h1 %}<h1 {% if chooser.icon %}class="icon icon-{{ chooser.icon }}"{% endif %}>Choose <span>{{ opts.verbose_name }}</span></h1>{% endblock %}
+			</div>
+		</div>
+	</div>
+</header>
+
+<div class="nice-padding">
+	{# Need to keep the form in the HTML, even if the snippet is not searchable #}
+	{# This is to allow pagination links to be generated from the form action URL #}
+	<form class="search-bar" action="{{ chooser_url }}" method="GET">
+		{% if is_searchable %}
+			<input type="search" name="q" id="id_q" placeholder="Search..." autocomplete="off">
+		{% endif %}
+	</form>
+
+	<div id="search-results" class="listing snippets">
+		{% include chooser.results_template with chooser=chooser %}
+	</div>
+</div>

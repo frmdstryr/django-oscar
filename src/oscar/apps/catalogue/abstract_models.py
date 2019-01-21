@@ -28,12 +28,10 @@ from oscar.models.fields import AutoSlugField, NullCharField
 from oscar.models.fields.slugfield import SlugField
 
 
-from wagtail.admin.edit_handlers import (
+from oscar.core.edit_handlers import (
     FieldPanel, InlinePanel, MultiFieldPanel, FieldRowPanel,
-    TabbedInterface, ObjectList
+    TabbedInterface, ObjectList, AutocompletePanel, ModelChooserPanel
 )
-from wagtailautocomplete.edit_handlers import AutocompletePanel
-from wagtail.core import blocks
 from wagtail.core.fields import RichTextField, StreamField
 from wagtail.core.models import Orderable
 from wagtail.images.edit_handlers import ImageChooserPanel
@@ -465,7 +463,8 @@ class AbstractProduct(ClusterableModel):
     related_panels = [
         # See comment for categories panels, same situation here
         InlinePanel('recommended_set',
-                    panels=[FieldPanel('primary')],
+                    panels=[ModelChooserPanel(
+                        'primary', search_fields=['title'])],
                     label=_('Recommendations')),
     ]
 
@@ -822,7 +821,7 @@ class AbstractProductRecommendation(Orderable):
     class Meta:
         abstract = True
         app_label = 'catalogue'
-        ordering = ['primary', '-sort_order']
+        ordering = ['-sort_order']
         unique_together = ('primary', 'recommendation')
         verbose_name = _('Product recommendation')
         verbose_name_plural = _('Product recomendations')

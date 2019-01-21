@@ -206,10 +206,10 @@
                         <td>{{ line.unit_price_excl_tax|currency:order.currency }}</td>
                         <td>{{ line.line_price_excl_tax|currency:order.currency }}</td>
                         <td>{{ line.quantity }}</td>
-                        <td>Subtots</td>
-                        <td>Tax</td>
-                        <td>discount</td>
-                        <td>Total</td>
+                        <td>{{ line.line_subtotal|currency:order.currency }}</td>
+                        <td>{{ line.line_total_tax|currency:order.currency }}</td>
+                        <td>{{ line.discount_incl_tax|currency:order.currency }}</td>
+                        <td>{{ line.line_total|currency:order.currency }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

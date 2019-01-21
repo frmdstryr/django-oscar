@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib.auth import models as auth_models
 from django.core.validators import RegexValidator
 from django.db import models
+from django.forms import widgets
 from django.template import TemplateDoesNotExist, engines
 from django.template.loader import get_template
 from django.urls import reverse
@@ -14,7 +15,10 @@ from oscar.core.loading import get_class
 from oscar.models.fields import AutoSlugField
 
 from modelcluster.models import ClusterableModel
-
+from oscar.core.edit_handlers import (
+    TabbedInterface, ObjectList, InlinePanel, ReadOnlyPanel, FieldPanel,
+    MultiFieldPanel
+)
 
 CommunicationTypeManager = get_class('customer.managers', 'CommunicationTypeManager')
 
@@ -77,10 +81,39 @@ class AbstractUser(ClusterableModel,
 
     USERNAME_FIELD = 'email'
 
+    general_panels = [
+        FieldPanel('first_name'),
+        FieldPanel('last_name'),
+        FieldPanel('username'),
+        FieldPanel('email'),
+        ReadOnlyPanel('date_joined'),
+    ]
+
+    permission_panels = [
+        FieldPanel('is_staff'),
+        FieldPanel('is_active'),
+        FieldPanel('groups', widget=widgets.CheckboxSelectMultiple),
+        #FieldPanel('permission_set', widget=widgets.CheckboxSelectMultiple),
+    ]
+
+    address_panels = [
+        InlinePanel('addresses', label=_('Address')),
+    ]
+
+    edit_handler = TabbedInterface([
+        ObjectList(general_panels, heading=_('General')),
+        ObjectList(permission_panels, heading=_('Permissions')),
+        ObjectList(address_panels, heading=_('Addresses')),
+    ])
+
     class Meta:
         abstract = True
         verbose_name = _('User')
         verbose_name_plural = _('Users')
+
+    @property
+    def full_name(self):
+        return self.get_full_name()
 
     def get_full_name(self):
         full_name = '%s %s' % (self.first_name, self.last_name)

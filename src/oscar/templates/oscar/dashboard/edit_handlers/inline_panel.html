@@ -1,0 +1,36 @@
+{% load i18n %}
+{% load wagtailadmin_tags  %}
+
+{{ self.formset.management_form }}
+
+<ul class="multiple" id="id_{{ self.formset.prefix }}-FORMS">
+    {% if self.formset.non_form_errors %}
+        <li class="error-message">
+            {% for error in self.formset.non_form_errors %}
+                <span>{{ error|escape }}</span>
+            {% endfor %}
+        </li>
+    {% endif %}
+
+    {% for child in self.children %}
+        {% block child_form %}
+            {% include "oscar/dashboard/edit_handlers/inline_panel_child.html" with can_edit=self.can_edit_existing %}
+        {% endblock %}
+    {% endfor %}
+</ul>
+
+{% if self.can_add_new %}
+    <script type="text/django-form-template" id="id_{{ self.formset.prefix }}-EMPTY_FORM_TEMPLATE">
+    {% escapescript %}
+        {% block empty_child_form %}
+            {% include "oscar/dashboard/edit_handlers/inline_panel_child.html" with child=self.empty_child can_edit=True can_delete=True %}
+        {% endblock %}
+    {% endescapescript %}
+    </script>
+
+    <p class="add">
+        <a class="button bicolor icon icon-plus" id="id_{{ self.formset.prefix }}-ADD">
+            {% blocktrans with label=self.label|lower %}Add {{ label }}{% endblocktrans %}
+        </a>
+    </p>
+{% endif %}

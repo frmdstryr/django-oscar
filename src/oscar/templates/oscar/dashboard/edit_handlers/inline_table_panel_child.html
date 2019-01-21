@@ -1,0 +1,21 @@
+{% load i18n %}
+{% load wagtailadmin_tags  %}
+<tr class="line-item {% cycle 'odd' 'even' %}" data-inline-panel-child id="inline_child_{{ child.form.prefix }}">
+    <td><input type="checkbox" name="line" value="{{ child.instance.id }}" /></td>
+    {% for field in child.children %}
+        <td>{{field.render_as_object}}</td>
+    {% endfor %}
+    <td>
+        <ul class="controls">
+            {% if can_edit %}
+                {% if can_order %}
+                    <li><button type="button" class="button icon text-replace white icon-order-up inline-child-move-up" id="{{ child.form.prefix }}-move-up" title="{% trans 'Move up' %}">{% trans "Move up" %}</button></li>
+                    <li><button type="button" class="button icon text-replace white icon-order-down inline-child-move-down" id="{{ child.form.prefix }}-move-down" title="{% trans 'Move down' %}">{% trans "Move down" %}</button></li>
+                {% endif %}
+                {% if can_delete %}
+                    <li><button type="button" class="button icon text-replace white icon-bin hover-no" id="{{ child.form.DELETE.id_for_label }}-button" title="{% trans 'Delete' %}">{% trans "Delete" %}</button></li>
+                {% endif %}
+            {% endif %}
+        </ul>
+    </td>
+</tr>

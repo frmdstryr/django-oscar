@@ -5,10 +5,13 @@ from django.utils.translation import gettext_lazy as _
 from oscar.apps.dashboard.base import DashboardAdmin
 from oscar.core.loading import get_class, get_model
 from oscar.core.compat import AUTH_USER_MODEL
+from oscar.templatetags.currency_filters import currency
+
 
 Order = get_model('order', 'Order')
 Customer = get_model(*AUTH_USER_MODEL.split('.'))
 Partner = get_model('partner', 'Partner')
+CommunicationEventType = get_model('customer', 'CommunicationEventType')
 
 
 class OrderAdmin(DashboardAdmin):
@@ -16,17 +19,28 @@ class OrderAdmin(DashboardAdmin):
     menu_label = _('Orders')
     menu_icon = 'list-alt'
     dashboard_url = 'orders'
-    instance_views = ['inspect']
+    instance_views = []
     restricted_actions = ['edit', 'delete']
-    list_display = ('number', 'date_placed', 'total_incl_tax', 'num_items',
-                    'billing_address', 'shipping_address', 'status', 'user')
+    list_display = ('number', 'status', 'num_items', 'order_total',
+                    'billing_address', 'shipping_address', 'date_placed')
     list_filter = ('date_placed', 'status')
     search_fields = ('number', 'user__email')
 
     inspect_view_enabled = True
+    inspect_view_class = get_class(
+        'dashboard.orders.views', 'OrderDetailsView')
     inspect_template_name = 'oscar/dashboard/orders/details.html'
     instance_views = DashboardAdmin.instance_views + ['inspect']
 
+    # =========================================================================
+    # Display fields
+    # =========================================================================
+    def order_total(self, order):
+        return currency(order.total_incl_tax, order.currency)
+
+    # =========================================================================
+    # Admin customizations
+    # =========================================================================
     def get_queryset(self, request):
         """
         Returns a queryset of all orders that a user is allowed to access.
@@ -68,4 +82,6 @@ class CustomerAdmin(DashboardAdmin):
             url = OrderAdmin.instance().get_action_url(
                 'view', quote(order.pk))
             return format_html('<a href="{}">{}</a>', url, order)
+
+
 

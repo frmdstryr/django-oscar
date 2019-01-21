@@ -154,7 +154,7 @@ class DashboardAdmin(ModelAdmin, BulkActionsMixin):
 
     @classmethod
     def instance(cls):
-        """ In order to prevent different instances of the ModelAdmin's from
+        """ In order to prevent different instances of the ModelAdmins from
         floating around use this method to get or create one.
 
         """
@@ -225,11 +225,35 @@ class DashboardAdminGroup(ModelAdminGroup):
     of each admin exists and also supports nested groups by accepting a parent.
 
     """
+    _instances = {}
+
     def __init__(self, parent=None):
         """ Register using instance to ensure only one exists """
+
+        if DashboardAdminGroup._instances.get(self.__class__):
+            name = self.__class__.__name__
+            raise RuntimeError("Only one instance of %s can exist,"
+                               "please use instance()" % name)
+
         self.parent = parent
         self.modeladmin_instances = []
         for ModelAdminClass in self.items:
             instance = ModelAdminClass.instance()
             instance.parent = self
             self.modeladmin_instances.append(instance)
+
+    @classmethod
+    def instance(cls):
+        """ In order to prevent different instances of the ModelAdminGroups
+        from floating around use this method to get or create one.
+
+        """
+        if cls not in DashboardAdminGroup._instances:
+            DashboardAdminGroup._instances[cls] = cls()
+        return DashboardAdminGroup._instances[cls]
+
+    def get_menu_item(self, order=0):
+        """ TODO: Nested submenus don't workk
+        """
+        return super().get_menu_item()
+

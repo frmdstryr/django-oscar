@@ -46,7 +46,7 @@ install_requires = [
 
     # Wagtail
     'wagtail>=2.0',
-    'wagtailmodelchooser>=0.3.0',
+    #'wagtailmodelchooser>=0.3.0', # Now added under vendor since it's hacked up so much
     'wagtail-autocomplete>=0.1.1',
 ]
 

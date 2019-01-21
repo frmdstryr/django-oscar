@@ -1,0 +1,17 @@
+<div class="{{ self.classname }}">
+    <table class="listing">
+        <thead>
+            <tr>
+                <th colspan="{{ self.colspan }}"><h3>{{ self.heading }}</h3></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for child in self.children %}
+                <tr class="{% cycle 'odd' 'even' %} {{ child.classes|join:" " }}">
+                    {% if self.colspan > 1 %}<td>{{ child.heading | capfirst }}</td> {% endif %}
+                    <td>{{ child.render_as_object }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

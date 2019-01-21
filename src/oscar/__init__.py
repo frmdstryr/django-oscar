@@ -60,7 +60,10 @@ OSCAR_CORE_APPS = [
     'oscar.apps.dashboard.vouchers',
     'oscar.apps.dashboard.communications',
     'oscar.apps.dashboard.system',
+
     # 3rd-party apps that oscar depends on
+    'oscar.vendor.modelchooser',
+
     'wagtail.contrib.routable_page',
     'wagtail.contrib.modeladmin',
     'wagtail.contrib.forms',
@@ -74,14 +77,13 @@ OSCAR_CORE_APPS = [
     'wagtail.search',
     'wagtail.admin',
     'wagtail.core',
-    'wagtailmodelchooser',
     'wagtailautocomplete',
     'modelcluster',
     'taggit',
     'haystack',
     'treebeard',
     'sorl.thumbnail',
-    'django_tables2',
+    #'django_tables2',
 ]
 
 

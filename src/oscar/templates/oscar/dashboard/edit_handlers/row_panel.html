@@ -1,0 +1,6 @@
+<div class="{{ self.classname | default:'row' }}">
+    {% if self.heading %}<h2>{{ self.heading }}</h2>{% endif %}
+    {% for child in self.children %}
+        {{ child.render }}
+    {% endfor %}
+</div>

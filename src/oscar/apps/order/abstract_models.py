@@ -8,6 +8,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.signing import BadSignature, Signer
 from django.db import models
 from django.db.models import Sum
+from django.shortcuts import reverse
 from django.utils import timezone
 from django.utils.crypto import constant_time_compare
 from django.utils.timezone import now
@@ -21,18 +22,28 @@ from oscar.core.loading import get_model, get_class
 from oscar.core.utils import get_default_currency
 from oscar.core.edit_handlers import (
     FieldPanel, InlinePanel, MultiFieldPanel, FieldRowPanel,
-    TabbedInterface, ObjectList, ReadOnlyPanel, ModelChooserPanel
+    TabbedInterface, ObjectList, ReadOnlyPanel, ModelChooserPanel,
+    MultiFieldTablePanel, RowPanel, AddOnlyInlinePanel, AutocompletePanel
 )
 from oscar.models.fields import AutoSlugField
+from oscar.templatetags.currency_filters import currency
 
 from . import exceptions
 
 from modelcluster.fields import ParentalKey
 from modelcluster.models import ClusterableModel
 
-from .panels import OrderAddressPanel
+from .edit_handlers import OrderAddressPanel, OrderLinesPanel
 
 logger = logging.getLogger('oscar.order')
+
+
+def currency_formatter(obj, price):
+    if isinstance(obj, AbstractLine):
+        obj = obj.order
+    if price is None:
+        price = D('0.0')
+    return currency(price, obj.currency)
 
 
 class AbstractOrder(ClusterableModel):
@@ -112,6 +123,13 @@ class AbstractOrder(ClusterableModel):
     #: status
     cascade = getattr(settings, 'OSCAR_ORDER_STATUS_CASCADE', {})
 
+    def __init__(self, *args, **kwargs):
+        """ Save the initial status to detect a change on save
+
+        """
+        super().__init__(*args, **kwargs)
+        self.old_status = self.status
+
     @classmethod
     def all_statuses(cls):
         """
@@ -149,20 +167,18 @@ class AbstractOrder(ClusterableModel):
             for line in self.lines.all():
                 line.status = self.cascade[self.status]
                 line.save()
+        # Status change is set on save
         self.save()
-
-        # Send signal for handling status changed
-        order_status_changed.send(sender=self,
-                                  order=self,
-                                  old_status=old_status,
-                                  new_status=new_status)
-
-        self._create_order_status_change(old_status, new_status)
 
     set_status.alters_data = True
 
     def _create_order_status_change(self, old_status, new_status):
         # Not setting the status on the order as that should be handled before
+        # Send signal for handling status changed
+        order_status_changed.send(sender=self,
+                                  order=self,
+                                  old_status=old_status,
+                                  new_status=new_status)
         self.status_changes.create(old_status=old_status, new_status=new_status)
 
     @property
@@ -325,14 +341,88 @@ class AbstractOrder(ClusterableModel):
                 return False
         return True
 
+    order_and_accounts_panels = [
+        MultiFieldTablePanel([
+            ReadOnlyPanel('number'),
+            ReadOnlyPanel(
+                'date_placed',
+                formatter=lambda order, date: date.strftime("%c")),
+        ], classname='col6', heading=_("Order Information")),
+        MultiFieldTablePanel([
+            ModelChooserPanel('user'),
+            ReadOnlyPanel('email'),
+        ], classname='col6', heading=_("Account Information")),
+    ]
+
+    address_panels = [
+        MultiFieldTablePanel([
+            OrderAddressPanel('shipping_address'),
+        ], classname='col6', colspan=1, heading=_("Shipping Address")),
+        MultiFieldTablePanel([
+            OrderAddressPanel('billing_address'),
+        ], classname='col6', colspan=1, heading=_("Billing Address")),
+    ]
+
+    order_lines_panels = [
+        OrderLinesPanel('lines',
+        #readonly=[
+            #ReadOnlyPanel('product'),
+            #ReadOnlyPanel('partner'),
+            #ReadOnlyPanel('status'),
+            #ReadOnlyPanel('unit_price_excl_tax', formatter=currency_formatter),
+            #ReadOnlyPanel('quantity'),
+            #ReadOnlyPanel('discount_excl_tax', formatter=currency_formatter),
+            #ReadOnlyPanel('line_subtotal', formatter=currency_formatter),
+            #ReadOnlyPanel('line_total_tax', formatter=currency_formatter),
+            #ReadOnlyPanel('line_total', formatter=currency_formatter),
+        #],
+        panels=[
+            ModelChooserPanel('stockrecord', search_fields=['product__title']),
+            FieldPanel('quantity')
+        ],
+        headings=[_('Product'), _('Qty')],
+        label=_('Line Item')),
+    ]
+
+    order_totals_panels = [
+        MultiFieldTablePanel([
+            AddOnlyInlinePanel(
+                'notes', label=_('Note'),
+                autofill=lambda panel: {'user': panel.request.user}),
+        ], classname='col6', colspan=1, heading=_("Order Notes")),
+        MultiFieldTablePanel([
+            ReadOnlyPanel('basket_total_before_discounts_incl_tax',
+                          formatter=currency_formatter,
+                          heading=_('Total before discounts')),
+            ReadOnlyPanel('total_discount_incl_tax',
+                          formatter=currency_formatter,
+                          heading=_('Discounts')),
+            ReadOnlyPanel('basket_total_incl_tax',
+                          formatter=currency_formatter,
+                          heading=_('Subtotal')),
+            ReadOnlyPanel('shipping_incl_tax',
+                          formatter=currency_formatter,
+                          heading=_('Shipping total')),
+            ReadOnlyPanel('total_incl_tax',
+                          formatter=currency_formatter,
+                          heading=_('Grand Total')),
+            ReadOnlyPanel('total_paid', formatter=currency_formatter),
+            ReadOnlyPanel('total_refunded', formatter=currency_formatter),
+            ReadOnlyPanel('total_due', formatter=currency_formatter),
+        ], classname='col6 order-totals', heading=_("Order Totals")),
+    ]
+
     edit_handler = ObjectList([
-        ReadOnlyPanel('number'),
-        FieldPanel('user'),
-        OrderAddressPanel('shipping_address', classname='col6'),
-        OrderAddressPanel('billing_address', classname='col6'),
-        InlinePanel('lines', classname='col12'),
-        InlinePanel('status_changes', classname='col12'),
-        InlinePanel('notes', classname='col12'),
+        RowPanel(order_and_accounts_panels,
+                 heading=_('Order & Account Information')),
+        RowPanel(address_panels,
+                 heading=_('Shipping & Billing Addresses')),
+        RowPanel(order_lines_panels,
+                 heading=_('Items Ordered')),
+        RowPanel(order_totals_panels,
+                 heading=_('Order Totals')),
+        #InlinePanel('status_changes', classname='col12'),
+
     ])
 
     class Meta:
@@ -421,6 +511,9 @@ class AbstractOrder(ClusterableModel):
         # this gives us the ability to set the date_placed explicitly (which is
         # useful when importing orders from another system).
         self.set_date_placed_default()
+        if self.old_status != self.status:
+            self._create_order_status_change(self.old_status, self.status)
+            self.old_status = self.status
         super().save(*args, **kwargs)
 
 
@@ -681,11 +774,10 @@ class AbstractLine(ClusterableModel):
         self.save()
 
         # Send signal for handling status changed
-        order_line_status_changed.send(sender=self,
-                                       line=self,
-                                       old_status=old_status,
-                                       new_status=new_status,
-                                       )
+        order_line_status_changed.send(
+            sender=self, line=self, old_status=old_status,
+            new_status=new_status
+        )
 
     set_status.alters_data = True
 
@@ -720,6 +812,18 @@ class AbstractLine(ClusterableModel):
     @property
     def unit_price_tax(self):
         return self.unit_price_incl_tax - self.unit_price_excl_tax
+
+    @property
+    def line_subtotal(self):
+        return self.line_price_excl_tax * self.quantity
+
+    @property
+    def line_total_tax(self):
+        return self.line_price_tax * self.quantity
+
+    @property
+    def line_total(self):
+        return self.line_price_incl_tax * self.quantity
 
     # Shipping status helpers
 

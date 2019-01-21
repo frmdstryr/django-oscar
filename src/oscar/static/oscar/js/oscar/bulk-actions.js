@@ -11,7 +11,7 @@ $(document).ready(function(){
     });
 
     // Select all control
-    $('input.bulk-action.select-all').on('change', function(e) {
+    $(document).on('change', 'input.bulk-action.select-all', function(e) {
         $('input.bulk-action').prop('checked', this.checked);
     });
 });
