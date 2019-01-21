@@ -462,9 +462,9 @@ class AbstractProduct(ClusterableModel):
 
     related_panels = [
         # See comment for categories panels, same situation here
-        InlinePanel('recommended_set',
+        InlinePanel('primary_recomendations',
                     panels=[ModelChooserPanel(
-                        'primary', search_fields=['title'])],
+                        'recommendation', search_fields=['title'])],
                     label=_('Recommendations')),
     ]
 
@@ -798,7 +798,7 @@ class AbstractProduct(ClusterableModel):
     @property
     def sorted_recommended_products(self):
         """Keeping order by recommendation ranking."""
-        return [r.recommendation for r in self.recommended_products.all()]
+        return [r.recommendation for r in self.primary_recomendations.all()]
 
 
 class AbstractProductRecommendation(Orderable):
@@ -821,7 +821,7 @@ class AbstractProductRecommendation(Orderable):
     class Meta:
         abstract = True
         app_label = 'catalogue'
-        ordering = ['-sort_order']
+        ordering = ['sort_order']
         unique_together = ('primary', 'recommendation')
         verbose_name = _('Product recommendation')
         verbose_name_plural = _('Product recomendations')
