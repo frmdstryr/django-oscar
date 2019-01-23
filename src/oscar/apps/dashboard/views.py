@@ -1,21 +1,27 @@
 from django import forms
+from django.db import transaction
 from django.shortcuts import redirect
 from django.utils.html import format_html
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.edit import FormView
 
 from wagtail.admin import messages
-from wagtail.contrib.modeladmin.views import IndexView, InspectView
+from wagtail.contrib.modeladmin.views import (
+    IndexView as BaseIndexView,
+    InspectView,
+    EditView as BaseEditView,
+    CreateView as BaseCreateView
+)
 
 
-class ListView(IndexView, FormView):
+class IndexView(BaseIndexView, FormView):
     """ Add actions and allow related lookups
 
     """
     bulk_actions = []
 
     # Don't use action as lookup params
-    IGNORED_PARAMS = IndexView.IGNORED_PARAMS + ('action', 'selection')
+    IGNORED_PARAMS = BaseIndexView.IGNORED_PARAMS + ('action', 'selection')
 
     def __init__(self, model_admin):
         super().__init__(model_admin)
@@ -58,3 +64,38 @@ class DetailView(InspectView):
 
     def get_meta_title(self):
         return _('Viewing %s') % self.verbose_name
+
+
+class BoundFormMixin:
+    """ The bound form lets edit handlers customize the form
+    on a per instance basis so the InlineFormPanel works.
+    """
+
+    def get_bound_form(self):
+        edit_handler = self.get_edit_handler().bind_to_instance(
+            instance=self.get_instance(),
+            form=self.get_form(),
+            request=self.request)
+        return edit_handler.form
+
+
+class CreateView(BaseCreateView, BoundFormMixin):
+
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        form = self.get_bound_form()
+        if form.is_valid():
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
+
+
+class EditView(BaseEditView, BoundFormMixin):
+
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        form = self.get_bound_form()
+        if form.is_valid():
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)

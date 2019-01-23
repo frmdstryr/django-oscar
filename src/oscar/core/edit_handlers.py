@@ -6,6 +6,7 @@ implementations can be modified or replaced as needed
 """
 import functools
 from django import forms
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.template.loader import render_to_string
 from django.utils.html import escape, format_html, mark_safe
@@ -14,53 +15,11 @@ from django.utils.translation import gettext_lazy as _
 
 from wagtail.admin import compare
 from wagtail.admin.edit_handlers import *
-from wagtail.core.models import Page
-from wagtail.core.rich_text.pages import PageLinkHandler as BasePageLinkHandler
 
 from oscar.forms import widgets
 from modelcluster.fields import ParentalKey
 from oscar.vendor.modelchooser.edit_handlers import ModelChooserPanel
 from wagtailautocomplete.edit_handlers import AutocompletePanel
-
-
-class ProductChooserPanel(BaseChooserPanel):
-    object_type_name = "product"
-
-    _target_content_type = None
-
-    def __init__(self, field_name, product_type=None):
-        super().__init__(field_name)
-        self.product_type = product_type
-
-    def clone(self):
-        return self.__class__(
-            field_name=self.field_name,
-            product_type=self.product_type,
-        )
-
-    def widget_overrides(self):
-        return {
-            self.field_name: widgets.AdminProductChooser()
-        }
-
-
-class PageLinkHandler(BasePageLinkHandler):
-    """Override the default PageLinkHandler to make sure we use the url
-    property of the `Category` classes.
-    """
-
-    @staticmethod
-    def expand_db_attributes(attrs, for_editor):
-        try:
-            page = Page.objects.get(id=attrs['id']).specific
-            if for_editor:
-                editor_attrs = 'data-linktype="page" data-id="%d" ' % page.id
-            else:
-                editor_attrs = ''
-
-            return '<a %shref="%s">' % (editor_attrs, escape(page.url))
-        except Page.DoesNotExist:
-            return "<a>"
 
 
 class ReadOnlyPanel(EditHandler):
@@ -318,3 +277,151 @@ class RowPanel(ObjectList):
 class AddressChooserPanel(ModelChooserPanel):
     object_template = 'oscar/dashboard/edit_handlers/field_no_label.html'
     choice_template = 'oscar/dashboard/edit_handlers/address_chooser_choice.html'
+
+
+class InlineFormPanel(BaseChooserPanel):
+    """ This is a mix of a ChooserPanel and InlinePanel which displays
+    a form with a prefix for the inline model. It works for ForeignKeys
+    and for OneToOneFields.
+
+    """
+    # Hide the label
+    object_template = 'oscar/dashboard/edit_handlers/field_no_label.html'
+
+    def __init__(self, field_name, panels=None, exclude=None, initial=None,
+                 *args, **kwargs):
+        if 'widget' not in kwargs:
+            # Always use hidden widget
+            kwargs['widget'] = forms.HiddenInput()
+        super().__init__(field_name, *args, **kwargs)
+        self.panels = panels
+        self.exclude = exclude or []
+        self.initial = initial or {}
+
+        # Hide the choice field heading and pass it to the inline form
+        self.child_heading = self.heading
+        self.heading = ''
+
+    def clone(self):
+        panel = super().clone()
+        panel.panels = self.panels
+        panel.initial = self.initial
+        panel.exclude = self.exclude
+        panel.child_heading = self.child_heading
+        return panel
+
+    @property
+    def related_model(self):
+        return self.db_field.related_model
+
+    def get_panel_definitions(self):
+        """ Get the panels for the inline form. """
+        # Look for a panels definition in the InlinePanel declaration
+        if self.panels is not None:
+            return self.panels
+        # Failing that, get it from the model
+        return extract_panel_definitions_from_model_class(
+            self.related_model,
+            exclude=self.exclude)
+
+    def get_child_edit_handler(self):
+        """ Get the panels for the inline form. """
+        panels = self.get_panel_definitions()
+        child_edit_handler = ObjectList([
+            MultiFieldPanel(panels, heading=self.child_heading,
+                            classname='inline-form')
+        ])
+        return child_edit_handler.bind_to_model(self.related_model)
+
+    # =========================================================================
+    # FormMixin API
+    # =========================================================================
+
+    def get_initial(self):
+        """Return the initial data to use for forms on this view."""
+        return self.initial.copy()
+
+    def get_prefix(self):
+        """Return the prefix to use for forms."""
+        return self.field_name
+
+    def get_instance(self):
+        """ Return an instance of the form to be used in this view."""
+        return self.get_chosen_item() or self.related_model()
+
+    def get_form_class(self):
+        """Return the form class to use."""
+        return self.get_child_edit_handler().get_form_class()
+
+    def get_form_kwargs(self):
+        """Return the keyword arguments for instantiating the form."""
+        kwargs = {
+            'initial': self.get_initial(),
+            'prefix': self.get_prefix(),
+            'instance': self.get_instance()
+        }
+
+        if self.request.method in ('POST', 'PUT'):
+            kwargs.update({
+                'data': self.request.POST,
+                'files': self.request.FILES,
+            })
+        return kwargs
+
+    def get_form(self, form_class=None):
+        """ Return an instance of the form to be used in this view."""
+        if form_class is None:
+            form_class = self.get_form_class()
+        return form_class(**self.get_form_kwargs())
+
+    # =========================================================================
+    # EditHandler API
+    # =========================================================================
+
+    def on_instance_bound(self):
+        """ When an instance is bound to this panel, bind
+        the child edit handler to the related object and create a form
+        using a prefix of the field_name.
+
+        """
+        super().on_instance_bound()
+
+        # Add a hook to clean and save related fields by wrapping
+        # the form field's clean method with the one in this panel.
+        # In order for this to work properly this panel MUST
+        # be bound to the form before form.is_valid is called.
+        field = self.form.fields[self.field_name]
+        clean_method = functools.partial(
+            self.clean, default_clean=getattr(field, 'clean'))
+        setattr(field, 'clean', clean_method)
+
+        # Bind the child edit handler to the related object
+        edit_handler = self.get_child_edit_handler()
+        form = self.get_form(edit_handler.get_form_class())
+        self.bound_panel = edit_handler.bind_to_instance(
+            form.instance, form=form, request=self.request)
+
+    def clean(self, value, default_clean):
+        """ Validate the inline form then run the default field's
+        clean method.  If the form is valid save it and pass the pk
+        as the value.
+
+        """
+        form = self.bound_panel.form
+        if form.is_valid():
+            value = form.save().pk
+        return default_clean(value)
+
+    def render_as_object(self):
+        return mark_safe("".join((
+            self.bound_panel.render_as_field(),
+            super().render_as_object()
+        )))
+
+    def render_as_field(self):
+        return mark_safe("".join((
+            self.bound_panel.render_as_field(),
+            super().render_as_field()
+        )))
+
+

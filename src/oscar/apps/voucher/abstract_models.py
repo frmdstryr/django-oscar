@@ -11,7 +11,7 @@ from oscar.core.compat import AUTH_USER_MODEL
 from oscar.core.loading import get_model
 
 
-from wagtail.admin.edit_handlers import (
+from oscar.core.edit_handlers import (
     FieldPanel, MultiFieldPanel, TabbedInterface, ObjectList, InlinePanel
 )
 from wagtail.core.fields import RichTextField
@@ -60,7 +60,7 @@ class AbstractVoucherSet(ClusterableModel):
             FieldPanel('end_datetime'),
         ], heading=_('Details')),
         ObjectList([
-            InlinePanel('offer')],
+            FieldPanel('offer')],
             heading=_('Offer')),
     ])
 

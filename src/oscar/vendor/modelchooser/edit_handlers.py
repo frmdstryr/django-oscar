@@ -32,7 +32,6 @@ class ModelChooserPanel(BaseChooserPanel):
 
     # Change the modal chooser template
     chooser_template = None
-    object_template = 'wagtailmodelchooser/field_no_label.html'
     modal_template = 'wagtailmodelchooser/modal.html'
     results_template = 'wagtailmodelchooser/results.html'
 
@@ -48,7 +47,8 @@ class ModelChooserPanel(BaseChooserPanel):
 
     def __init__(self, field_name, search_fields=None,
                  show_add_link=None, show_edit_link=None,
-                 link_to_add_url=None, link_to_edit_url=None, **kwargs):
+                 link_to_add_url=None, link_to_edit_url=None,
+                 show_label=None, **kwargs):
         super().__init__(field_name, **kwargs)
         if search_fields is not None:
             self.search_fields = search_fields

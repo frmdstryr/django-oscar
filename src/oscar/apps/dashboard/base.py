@@ -97,7 +97,6 @@ class DashboardAdmin(ModelAdmin, BulkActionsMixin):
     permission_helper_class = DashboardPermissionHelper
     button_helper_class = DashboardButtonHelper
 
-
     #: Use this for the admin to use a more friendly url
     #: the action will be appended by default but you can override
     #: get_url_helper_class if needed
@@ -110,7 +109,9 @@ class DashboardAdmin(ModelAdmin, BulkActionsMixin):
     #: List of view types that require a url which accepts an instance_pk
     instance_views = ['edit', 'delete', 'inspect']
     inspect_view_class = get_class('dashboard.views', 'DetailView')
-    index_view_class = get_class('dashboard.views', 'ListView')
+    index_view_class = get_class('dashboard.views', 'IndexView')
+    create_view_class = get_class('dashboard.views', 'CreateView')
+    edit_view_class = get_class('dashboard.views', 'EditView')
     index_template_name = 'oscar/dashboard/index.html'
 
     #: Actions which are explicitly restricted from being performed on
@@ -130,6 +131,7 @@ class DashboardAdmin(ModelAdmin, BulkActionsMixin):
             name = self.__class__.__name__
             raise RuntimeError("Only one instance of %s can exist,"
                                "please use instance()" % name)
+
     def get_list_display(self, request):
         """ Add an selection checkbox to each row
 

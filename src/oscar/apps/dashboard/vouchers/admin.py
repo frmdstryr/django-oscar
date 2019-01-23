@@ -22,8 +22,7 @@ class VouchersAdmin(DashboardAdmin):
             offer_type=ConditionalOffer.VOUCHER)
 
 
-class VoucherSetsAdmin(DashboardAdmin
-                       ):
+class VoucherSetsAdmin(DashboardAdmin):
     model = VoucherSet
     menu_label = _('Voucher Set')
     menu_icon = 'bookmark'

@@ -7,7 +7,7 @@ from decimal import ROUND_DOWN
 
 from django import forms
 from django.conf import settings
-from django.core import exceptions
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db import models
 from django.db.models.query import Q
 from django.template.defaultfilters import date as date_filter
@@ -22,10 +22,10 @@ from oscar.core.loading import get_class, get_classes, get_model, cached_import_
 from oscar.models import fields
 from oscar.templatetags.currency_filters import currency
 
-from wagtailautocomplete.edit_handlers import AutocompletePanel
-from wagtail.admin.edit_handlers import (
+from oscar.core.edit_handlers import (
     FieldPanel, InlinePanel, MultiFieldPanel, FieldRowPanel,
-    TabbedInterface, ObjectList
+    TabbedInterface, ObjectList, ReadOnlyPanel, AutocompletePanel,
+    ModelChooserPanel, InlineFormPanel
 )
 from wagtail.core.fields import RichTextField
 from wagtail.core.models import Orderable
@@ -226,6 +226,44 @@ class AbstractConditionalOffer(ClusterableModel):
     # voucher offer)
     _voucher = None
 
+    info_panels = [
+        FieldPanel('name'),
+        FieldPanel('description'),
+        FieldPanel('priority'),
+        FieldPanel('redirect_url'),
+    ]
+
+    offer_panels = [
+        FieldPanel('offer_type'),
+        InlineFormPanel('condition', exclude=['proxy_class']),
+        InlineFormPanel('benefit', exclude=['proxy_class']),
+    ]
+
+    usage_panels = [
+        FieldPanel('start_datetime'),
+        FieldPanel('end_datetime'),
+        FieldPanel('exclusive'),
+        FieldPanel('max_global_applications'),
+        FieldPanel('max_user_applications'),
+        FieldPanel('max_basket_applications'),
+        FieldPanel('max_discount'),
+    ]
+
+    stats_panels = [
+        ReadOnlyPanel('is_available'),
+        ReadOnlyPanel('date_created'),
+        ReadOnlyPanel('num_applications'),
+        ReadOnlyPanel('num_orders'),
+        ReadOnlyPanel('total_discount'),
+    ]
+
+    edit_handler = TabbedInterface([
+        ObjectList(info_panels,  heading=_('Info')),
+        ObjectList(offer_panels,  heading=_('Offer')),
+        ObjectList(usage_panels,  heading=_('Usage Limits')),
+        ObjectList(stats_panels,  heading=_('Usage Stats')),
+    ])
+
     class Meta:
         abstract = True
         app_label = 'offer'
@@ -252,8 +290,15 @@ class AbstractConditionalOffer(ClusterableModel):
     def clean(self):
         if (self.start_datetime and self.end_datetime
                 and self.start_datetime > self.end_datetime):
-            raise exceptions.ValidationError(
+            raise ValidationError(
                 _('End date should be later than start date'))
+        try:
+            if (self.condition.range != self.benefit.range):
+                raise ValidationError(
+                _('Product ranges for condition and benefit must be the same'))
+        except ObjectDoesNotExist:
+            raise ValidationError(
+                _('A benefit and condition are required'))
 
     @property
     def is_open(self):
@@ -558,7 +603,7 @@ class AbstractBenefit(BaseOfferMixin):
                             "'max affected items' attribute"))
 
         if errors:
-            raise exceptions.ValidationError(errors)
+            raise ValidationError(errors)
 
     def clean_percentage(self):
         errors = []
@@ -572,7 +617,7 @@ class AbstractBenefit(BaseOfferMixin):
             errors.append(_("Percentage discount cannot be greater than 100"))
 
         if errors:
-            raise exceptions.ValidationError(errors)
+            raise ValidationError(errors)
 
     def clean_shipping_absolute(self):
         errors = []
@@ -586,7 +631,7 @@ class AbstractBenefit(BaseOfferMixin):
                             "'max affected items' attribute"))
 
         if errors:
-            raise exceptions.ValidationError(errors)
+            raise ValidationError(errors)
 
     def clean_shipping_percentage(self):
         errors = []
@@ -603,7 +648,7 @@ class AbstractBenefit(BaseOfferMixin):
             errors.append(_("Shipping discounts don't require a "
                             "'max affected items' attribute"))
         if errors:
-            raise exceptions.ValidationError(errors)
+            raise ValidationError(errors)
 
     def clean_shipping_fixed_price(self):
         errors = []
@@ -615,11 +660,11 @@ class AbstractBenefit(BaseOfferMixin):
                             "'max affected items' attribute"))
 
         if errors:
-            raise exceptions.ValidationError(errors)
+            raise ValidationError(errors)
 
     def clean_fixed_price(self):
         if self.range:
-            raise exceptions.ValidationError(
+            raise ValidationError(
                 _("No range should be selected as the condition range will "
                   "be used instead."))
 
@@ -631,7 +676,7 @@ class AbstractBenefit(BaseOfferMixin):
             errors.append(_("Fixed discount benefits require a value"))
 
         if errors:
-            raise exceptions.ValidationError(errors)
+            raise ValidationError(errors)
 
     def clean_discount_per_unit(self):
         return self.clean_absolute()
