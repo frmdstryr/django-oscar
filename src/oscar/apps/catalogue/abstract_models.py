@@ -432,9 +432,9 @@ class AbstractProduct(ClusterableModel):
     # Admin
     general_panels = [
         FieldPanel('title', classname="full title"),
+        FieldPanel('upc'),
         FieldPanel('description', classname="full"),
         FieldPanel('is_enabled'),
-
     ]
     inventory_panels = [
         InlinePanel('stockrecords', label=_('Stock Record')),

@@ -65,9 +65,21 @@ class OffersGroup(DashboardAdminGroup):
 
 class ContentGroup(DashboardAdminGroup):
     menu_label = _('Content')
-    menu_icon = 'folder'
+    menu_icon = 'map-o'
     menu_order = 600
-    items = ()
+
+    @property
+    def items(self):
+        return get_classes('dashboard.pages.admin', (
+            'PagesAdmin',
+            'PagePromotionAdmin',
+            'KeywordPromotionAdmin',
+            'HtmlPromotionAdmin',
+            'ImagePromotionAdmin',
+            'MultiImagePromotionAdmin',
+            'SingleProductPromotionAdmin',
+            'HandPickedProductListPromotionAdmin',
+        ))
 
 
 class ReportsGroup(DashboardAdminGroup):

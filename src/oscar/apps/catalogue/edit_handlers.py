@@ -12,7 +12,7 @@ class ProductAttributesPanel(InlinePanel):
     # this is the name that links the AttributeValue to the Attribute
     rel_name = 'attribute'
 
-    def on_instance_bound(self):
+    def on_form_bound(self):
         ProductAttributeValue = get_model('catalogue', 'ProductAttributeValue')
 
         instance = self.instance

@@ -6,7 +6,7 @@
     when clicked.
 {% endcomment %}
 
-<div id="{{ attrs.id }}-chooser" data-url="{{chooser_url}}" data-field-id="{{ attrs.id }}" class="chooser {% block chooser_class %}model-chooser{% endblock %} {% if not value %}blank{% endif %}">
+<div id="{{ attrs.id }}-chooser" data-url="{{chooser_url}}" data-content-type-field-id="{{ widget.content_type_field_id }}" data-field-id="{{ attrs.id }}" class="chooser {% block chooser_class %}model-chooser{% endblock %} {% if not value %}blank{% endif %}">
 
     <div class="chosen">
         <div class="chosen-item">

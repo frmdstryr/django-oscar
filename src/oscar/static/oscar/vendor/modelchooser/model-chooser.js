@@ -74,6 +74,9 @@ function initModalChooser(modal) {
                 console.log(data, status);
                 searchResults.html(data);
                 ajaxifyLinks(searchResults);
+            },
+            error: function(e) {
+                addMessage('error', 'Could not load results');
             }
         });
     }
@@ -87,8 +90,20 @@ $(document).ready(function() {
         var chooser = $(this).closest('.model-chooser');
         var choice = chooser.find('.chosen-item');
         var input = $('#'+chooser.data('field-id'));
+        var contentTypeId = chooser.data('content-type-field-id');
+        var url = chooser.data('url');
+
+        // If a content type is required send it
+        if (contentTypeId) {
+            var ct = $('#'+contentTypeId).val();
+            if (!ct) {
+                addMessage('warning', 'Please select a content type first');
+                return;
+            }
+            url += "?"+$.param({'content_type': ct});
+        }
         var modal = ModalWorkflow({
-            url: chooser.data('url'),
+            url: url,
             responses: {
                 instanceChosen: function(instanceData) {
                     input.val(instanceData.pk);

@@ -15,10 +15,11 @@ from django.utils.translation import gettext_lazy as _
 
 from wagtail.admin import compare
 from wagtail.admin.edit_handlers import *
+from wagtail.images.edit_handlers import ImageChooserPanel
 
 from oscar.forms import widgets
-from modelcluster.fields import ParentalKey
 from oscar.vendor.modelchooser.edit_handlers import ModelChooserPanel
+from modelcluster.fields import ParentalKey
 from wagtailautocomplete.edit_handlers import AutocompletePanel
 
 
@@ -166,9 +167,9 @@ class InlineStackedPanel(InlinePanel):
         panels = self.get_readonly_panel_definitions()
         child_edit_handler = ReadOnlyMultiFieldPanel(
             panels, heading=self.heading)
-        return child_edit_handler.bind_to_model(self.db_field.related_model)
+        return child_edit_handler.bind_to(model=self.db_field.related_model)
 
-    def on_instance_bound(self):
+    def on_form_bound(self):
         self.formset = self.form.formsets[self.relation_name]
 
         self.children = []
@@ -185,9 +186,9 @@ class InlineStackedPanel(InlinePanel):
             else:
                 child_edit_handler = self.get_child_readonly_handler()
             self.children.append(
-                child_edit_handler.bind_to_instance(instance=subform.instance,
-                                                    form=subform,
-                                                    request=self.request))
+                child_edit_handler.bind_to(instance=subform.instance,
+                                           form=subform,
+                                           request=self.request))
 
         # if this formset is valid, it may have been re-ordered; respect that
         # in case the parent form errored and we need to re-render
@@ -212,7 +213,7 @@ class InlineStackedPanel(InlinePanel):
 
 
         self.empty_child = self.get_child_edit_handler()
-        self.empty_child = self.empty_child.bind_to_instance(
+        self.empty_child = self.empty_child.bind_to(
             instance=empty_form.instance, form=empty_form, request=self.request)
 
 
@@ -307,10 +308,10 @@ class InlineFormPanel(BaseChooserPanel):
         panel.panels = self.panels
         panel.initial = self.initial
         panel.exclude = self.exclude
-        panel.child_heading = self.child_heading
+        #panel.child_heading = self.child_heading
         return panel
 
-    @property
+    @cached_property
     def related_model(self):
         return self.db_field.related_model
 
@@ -328,15 +329,14 @@ class InlineFormPanel(BaseChooserPanel):
         """ Get the panels for the inline form. """
         panels = self.get_panel_definitions()
         child_edit_handler = ObjectList([
-            MultiFieldPanel(panels, heading=self.child_heading,
+            MultiFieldPanel(panels, heading='',
                             classname='inline-form')
         ])
-        return child_edit_handler.bind_to_model(self.related_model)
+        return child_edit_handler.bind_to(model=self.related_model)
 
     # =========================================================================
     # FormMixin API
     # =========================================================================
-
     def get_initial(self):
         """Return the initial data to use for forms on this view."""
         return self.initial.copy()
@@ -378,13 +378,13 @@ class InlineFormPanel(BaseChooserPanel):
     # EditHandler API
     # =========================================================================
 
-    def on_instance_bound(self):
+    def on_form_bound(self):
         """ When an instance is bound to this panel, bind
         the child edit handler to the related object and create a form
         using a prefix of the field_name.
 
         """
-        super().on_instance_bound()
+        super().on_form_bound()
 
         # Add a hook to clean and save related fields by wrapping
         # the form field's clean method with the one in this panel.
@@ -398,8 +398,8 @@ class InlineFormPanel(BaseChooserPanel):
         # Bind the child edit handler to the related object
         edit_handler = self.get_child_edit_handler()
         form = self.get_form(edit_handler.get_form_class())
-        self.bound_panel = edit_handler.bind_to_instance(
-            form.instance, form=form, request=self.request)
+        self.bound_panel = edit_handler.bind_to(
+            instance=form.instance, form=form, request=self.request)
 
     def clean(self, value, default_clean):
         """ Validate the inline form then run the default field's
@@ -425,3 +425,23 @@ class InlineFormPanel(BaseChooserPanel):
         )))
 
 
+class GenericInlineFormPanel(InlineFormPanel):
+    def __init__(self, field_name, content_type_field="content_type",
+                 content_object_field="content_object", *args, **kwargs):
+        super().__init__(field_name, *args, **kwargs)
+        self.content_type_field = content_type_field
+        self.content_object_field = content_object_field
+
+    def clone(self):
+        panel = super().clone()
+        panel.content_type_field = self.content_type_field
+        panel.content_object_field = self.content_object_field
+        return panel
+
+    def get_chosen_item(self):
+        return getattr(self.instance, self.content_object_field)
+
+    @property
+    def related_model(self):
+        content_type = getattr(self.instance, self.content_type_field)
+        return content_type.model_class()

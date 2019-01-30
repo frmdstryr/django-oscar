@@ -30,7 +30,7 @@ def get_request_promotions(request):
     promotions = PagePromotion._default_manager.select_related() \
         .prefetch_related('content_object') \
         .filter(page_url=request.path) \
-        .order_by('display_order')
+        .order_by('sort_order')
 
     if 'q' in request.GET:
         keyword_promotions \

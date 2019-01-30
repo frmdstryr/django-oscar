@@ -1,3 +1,4 @@
+from django import forms
 from django.conf import settings
 from django.contrib.contenttypes import fields
 from django.contrib.contenttypes.models import ContentType
@@ -7,12 +8,19 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
 from oscar.core.loading import get_model
-from oscar.models.fields import ExtendedURLField
+from oscar.core.edit_handlers import (
+    FieldPanel, ImageChooserPanel, GenericInlineFormPanel, InlinePanel,
+    ModelChooserPanel
+)
+from oscar.models.fields import ExtendedURLField, ParentalKey
+from oscar.apps.dashboard.widgets import AceEditorWidget
 
 # Linking models - these link promotions to content (eg pages, or keywords)
+from wagtail.core.models import Orderable
+from modelcluster.models import ClusterableModel
 
 
-class LinkedPromotion(models.Model):
+class LinkedPromotion(ClusterableModel, Orderable):
 
     # We use generic foreign key to link to a promotion model
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
@@ -21,9 +29,17 @@ class LinkedPromotion(models.Model):
 
     position = models.CharField(_("Position"), max_length=100,
                                 help_text="Position on page")
-    display_order = models.PositiveIntegerField(_("Display Order"), default=0)
     clicks = models.PositiveIntegerField(_("Clicks"), default=0)
     date_created = models.DateTimeField(_("Date Created"), auto_now_add=True)
+
+    panels = [
+        FieldPanel('content_type'),
+        FieldPanel('object_id'),
+        FieldPanel('position'),
+        ModelChooserPanel('object_id', generic_name='content_object'),
+        #GenericInlineFormPanel('object_id', 'content_type', 'content_object',
+        #                       heading=_('Promotion')),
+    ]
 
     class Meta:
         abstract = True
@@ -44,6 +60,10 @@ class PagePromotion(LinkedPromotion):
     """
     page_url = ExtendedURLField(
         _('Page URL'), max_length=128, db_index=True)
+
+    panels = [
+        FieldPanel('page_url'),
+    ] + LinkedPromotion.panels
 
     def __str__(self):
         return "%s on %s" % (self.content_object, self.page_url)
@@ -71,6 +91,11 @@ class KeywordPromotion(LinkedPromotion):
     # be restricted to different parts of the site.
     filter = models.CharField(_("Filter"), max_length=200, blank=True)
 
+    panels = [
+        FieldPanel('keyword'),
+        FieldPanel('filter'),
+    ]
+
     def get_link(self):
         return reverse('promotions:keyword-click',
                        kwargs={'keyword_promotion_id': self.id})
@@ -82,7 +107,7 @@ class KeywordPromotion(LinkedPromotion):
     # Different model types for each type of promotion
 
 
-class AbstractPromotion(models.Model):
+class AbstractPromotion(ClusterableModel):
     """
     Abstract base promotion that defines the interface
     that subclasses must implement.
@@ -91,6 +116,11 @@ class AbstractPromotion(models.Model):
     keywords = fields.GenericRelation(KeywordPromotion,
                                       verbose_name=_('Keywords'))
     pages = fields.GenericRelation(PagePromotion, verbose_name=_('Pages'))
+
+    panels = [
+        #FieldPanel('keywords'),
+        #InlineFormPanel('content_object'),
+    ]
 
     class Meta:
         abstract = True
@@ -151,6 +181,12 @@ class RawHTML(AbstractPromotion):
     body = models.TextField(_("HTML"))
     date_created = models.DateTimeField(auto_now_add=True)
 
+    panels = AbstractPromotion.panels + [
+        FieldPanel('name'),
+        FieldPanel('display_type'),
+        FieldPanel('body', widget=AceEditorWidget),
+    ]
+
     class Meta:
         app_label = 'promotions'
         verbose_name = _('Raw HTML')
@@ -172,18 +208,24 @@ class Image(AbstractPromotion):
     link_url = ExtendedURLField(
         _('Link URL'), blank=True,
         help_text=_('This is where this promotion links to'))
-    image = models.ImageField(
-        _('Image'), upload_to=settings.OSCAR_PROMOTION_FOLDER,
-        max_length=255)
+    image = models.ForeignKey('wagtailimages.Image',
+                              on_delete=models.PROTECT,
+                              max_length=255)
     date_created = models.DateTimeField(auto_now_add=True)
+
+    panels = AbstractPromotion.panels + [
+        FieldPanel('name'),
+        FieldPanel('link_url'),
+        ImageChooserPanel('image'),
+    ]
 
     def __str__(self):
         return self.name
 
     class Meta:
         app_label = 'promotions'
-        verbose_name = _("Image")
-        verbose_name_plural = _("Image")
+        verbose_name = _("Promo Image")
+        verbose_name_plural = _("Promo Image")
 
 
 class MultiImage(AbstractPromotion):
@@ -201,13 +243,18 @@ class MultiImage(AbstractPromotion):
             "(You may need to create some first)."))
     date_created = models.DateTimeField(auto_now_add=True)
 
+    panels = AbstractPromotion.panels + [
+        FieldPanel('name'),
+        FieldPanel('images', widget=forms.CheckboxSelectMultiple),
+    ]
+
     def __str__(self):
         return self.name
 
     class Meta:
         app_label = 'promotions'
-        verbose_name = _("Multi Image")
-        verbose_name_plural = _("Multi Images")
+        verbose_name = _("Promo Image Set")
+        verbose_name_plural = _("Promo Image Set")
 
 
 class SingleProduct(AbstractPromotion):
@@ -222,6 +269,13 @@ class SingleProduct(AbstractPromotion):
 
     def template_context(self, request):
         return {'product': self.product}
+
+    panels = [
+        FieldPanel('name'),
+        FieldPanel('description'),
+        ModelChooserPanel('product', search_fields=['title'],
+                          default_filters={'is_enabled': True}),
+    ]
 
     class Meta:
         app_label = 'promotions'
@@ -241,6 +295,13 @@ class AbstractProductList(AbstractPromotion):
     link_url = ExtendedURLField(_('Link URL'), blank=True)
     link_text = models.CharField(_("Link text"), max_length=255, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
+
+    panels = [
+        FieldPanel('name'),
+        FieldPanel('description'),
+        FieldPanel('link_url'),
+        FieldPanel('link_text'),
+    ]
 
     class Meta:
         abstract = True
@@ -272,15 +333,19 @@ class HandPickedProductList(AbstractProductList):
     def get_products(self):
         return self.get_queryset()
 
+    panels = AbstractProductList.panels + [
+        InlinePanel('orderedproduct_set', label=_('Products')),
+    ]
+
     class Meta:
         app_label = 'promotions'
         verbose_name = _("Hand Picked Product List")
         verbose_name_plural = _("Hand Picked Product Lists")
 
 
-class OrderedProduct(models.Model):
+class OrderedProduct(Orderable):
 
-    list = models.ForeignKey(
+    list = ParentalKey(
         'promotions.HandPickedProductList',
         on_delete=models.CASCADE,
         verbose_name=_("List"))
@@ -288,11 +353,15 @@ class OrderedProduct(models.Model):
         'catalogue.Product',
         on_delete=models.CASCADE,
         verbose_name=_("Product"))
-    display_order = models.PositiveIntegerField(_('Display Order'), default=0)
+
+    panels = [
+        ModelChooserPanel('product', search_fields=['title'],
+                          default_filters={'is_enabled': True}),
+    ]
 
     class Meta:
         app_label = 'promotions'
-        ordering = ('display_order',)
+        ordering = ('sort_order',)
         unique_together = ('list', 'product')
         verbose_name = _("Ordered product")
         verbose_name_plural = _("Ordered product")
@@ -327,17 +396,16 @@ class AutomaticProductList(AbstractProductList):
         verbose_name_plural = _("Automatic product lists")
 
 
-class OrderedProductList(HandPickedProductList):
-    tabbed_block = models.ForeignKey(
+class OrderedProductList(HandPickedProductList, Orderable):
+    tabbed_block = ParentalKey(
         'promotions.TabbedBlock',
         on_delete=models.CASCADE,
         related_name='tabs',
         verbose_name=_("Tabbed Block"))
-    display_order = models.PositiveIntegerField(_('Display Order'), default=0)
 
     class Meta:
         app_label = 'promotions'
-        ordering = ('display_order',)
+        ordering = ('sort_order',)
         verbose_name = _("Ordered Product List")
         verbose_name_plural = _("Ordered Product Lists")
 

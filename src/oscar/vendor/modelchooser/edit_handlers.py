@@ -1,13 +1,16 @@
 import operator
 from functools import reduce
-from django.core import signing
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
+from django.db.models.query import EmptyQuerySet
 from django.shortcuts import reverse
 from django.template.loader import render_to_string
+from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
 from wagtail.admin.edit_handlers import BaseChooserPanel, get_form_for_model
 from django.contrib.admin.utils import lookup_needs_distinct
+from django.contrib.contenttypes.fields import GenericForeignKey
+
 
 from .widgets import AdminModelChooser
 from . import registry
@@ -16,9 +19,12 @@ from . import registry
 class ModelChooserPanel(BaseChooserPanel):
     # Model this panel will be bound to
     model = None
+    request = None
 
     # Field of the model this panel is for
     field_name = None
+    generic_name = None
+    content_type = None  # This is set by the chooser view
 
     # Links to add a new item or edit the current item
     # the edit url may be callable to generate a url based on the current object
@@ -45,10 +51,14 @@ class ModelChooserPanel(BaseChooserPanel):
     # Fields to search
     search_fields = []
 
+    # Queryset filters
+    default_filters = {}
+
     def __init__(self, field_name, search_fields=None,
                  show_add_link=None, show_edit_link=None,
                  link_to_add_url=None, link_to_edit_url=None,
-                 show_label=None, **kwargs):
+                 show_label=None, default_filters=None, generic_name=None,
+                 **kwargs):
         super().__init__(field_name, **kwargs)
         if search_fields is not None:
             self.search_fields = search_fields
@@ -60,14 +70,18 @@ class ModelChooserPanel(BaseChooserPanel):
             self.link_to_add_url = link_to_add_url
         if link_to_edit_url is not None:
             self.link_to_edit_url = link_to_edit_url
+        if default_filters is not None:
+            self.default_filters = default_filters
+        if generic_name is not None:
+            self.generic_name = generic_name
 
     # ========================================================================
     # Panel API
     # ========================================================================
-
     def clone(self):
-        return self.__class__(
+        panel = self.__class__(
             field_name=self.field_name,
+            generic_name=self.generic_name,
             widget=self.widget if hasattr(self, 'widget') else None,
             heading=self.heading,
             classname=self.classname,
@@ -77,14 +91,20 @@ class ModelChooserPanel(BaseChooserPanel):
             show_edit_link=self.show_edit_link,
             link_to_add_url=self.link_to_add_url,
             link_to_edit_url=self.link_to_edit_url,
+            default_filters=self.default_filters,
         )
+        panel.content_type = self.content_type
+        return panel
 
-    def on_instance_bound(self):
+    def on_form_bound(self):
         """ Use the registry as a temporary cache to hold the chooser
         with it's instance. This works since the panel is cloned each
         time it's bound to an instance.
 
         """
+        super().on_form_bound()
+        db_field = self.db_field
+
         field = self.form.fields[self.field_name]
         widget = field.widget
 
@@ -104,9 +124,19 @@ class ModelChooserPanel(BaseChooserPanel):
         # Create data that can be used by the chooser view
         ctx = self.get_chooser_context()
         ctx['chooser_id'] = chooser_id
-        widget.signed_data = signing.dumps(ctx, compress=True)
+        widget.chooser_ctx = ctx
 
-        super().on_instance_bound()
+        # If it's a generic foreign key set the id of the content_type field
+        if self.is_generic:
+            ct_id = self.form[self.db_field.ct_field].id_for_label
+            widget.content_type_field_id = ct_id
+
+
+    def required_fields(self):
+        if self.is_generic:
+            db_field = self.db_field
+            return [db_field.ct_field, db_field.fk_field]
+        return super().required_fields()
 
     def widget_overrides(self):
         return {self.field_name: AdminModelChooser(
@@ -116,9 +146,30 @@ class ModelChooserPanel(BaseChooserPanel):
             show_add_link=self.show_add_link,
             show_edit_link=self.show_edit_link)}
 
-    @property
+    @cached_property
+    def db_field(self):
+        """ If a generic foreign key is given use that as the field
+
+        """
+        try:
+            model = self.model
+        except AttributeError:
+            raise ImproperlyConfigured("%r must be bound to a model before calling db_field" % self)
+
+        return model._meta.get_field(self.generic_name or self.field_name)
+
+    @cached_property
+    def is_generic(self):
+        return isinstance(self.db_field, GenericForeignKey)
+
+    @cached_property
     def target_model(self):
-        return self.model._meta.get_field(self.field_name).remote_field.model
+        db_field = self.db_field
+        if self.is_generic:
+            if self.content_type:
+                return self.content_type.model_class()
+            return None
+        return db_field.remote_field.model
 
     def render_as_field(self):
         instance_obj = self.get_chosen_item()
@@ -152,6 +203,7 @@ class ModelChooserPanel(BaseChooserPanel):
         """
         return {
             'field_name': self.field_name,
+            'generic_name': self.generic_name,
             'instance_pk': self.instance.pk,
             'app_label': self.model._meta.app_label,
             'model_name': self.model._meta.model_name,
@@ -160,16 +212,20 @@ class ModelChooserPanel(BaseChooserPanel):
     def get_link_to_add_url(self):
         if self.link_to_add_url:
             return self.link_to_add_url
-        opts = self.target_model._meta
+        target_model = self.target_model
+        if not target_model:
+            return '#'
         url_name = '{opts.app_label}_{opts.model_name}_modeladmin_create'
-        return url_name.format(opts=opts)
+        return url_name.format(opts=target_model._meta)
 
     def get_link_to_edit_url(self):
         if self.link_to_edit_url:
             return self.link_to_edit_url
-        opts = self.target_model._meta
+        target_model = self.target_model
+        if not target_model:
+            return '#'
         url_name = '{opts.app_label}_{opts.model_name}_modeladmin_edit'
-        return url_name.format(opts=opts)
+        return url_name.format(opts=target_model._meta)
 
     # ========================================================================
     # Chooser queryset
@@ -181,7 +237,10 @@ class ModelChooserPanel(BaseChooserPanel):
         `target_model` is the model of the field being chosen.
 
         """
-        return self.target_model._default_manager.all()
+        qs = self.target_model._default_manager.all()
+        if self.default_filters:
+            qs = qs.filter(**self.default_filters)
+        return qs
 
     def get_search_results(self, request, queryset, search_term):
         """ This is pulled from the modeladmin IndexView
@@ -219,4 +278,3 @@ class ModelChooserPanel(BaseChooserPanel):
         return get_form_for_model(self.model,
                                   fields=self.required_fields(),
                                   widgets=self.widget_overrides())
-
