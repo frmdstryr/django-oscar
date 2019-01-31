@@ -24,7 +24,7 @@ from modelcluster.models import ClusterableModel
 
 class AbstractPartner(ClusterableModel):
     """
-    A fulfillment partner. An individual or company who can fulfil products.
+    A fulfillment partner. An individual or company who can fulfill products.
     E.g. for physical goods, somebody with a warehouse and means of delivery.
 
     Creating one or more instances of the Partner model is a required step in
@@ -34,7 +34,8 @@ class AbstractPartner(ClusterableModel):
     code = AutoSlugField(_("Code"), max_length=128, unique=True, db_index=True,
                          populate_from='name')
     name = models.CharField(
-        pgettext_lazy("Partner's name", "Name"), max_length=128, blank=True, db_index=True)
+        pgettext_lazy("Partner's name", "Name"),
+        max_length=128, blank=True, db_index=True)
 
     #: A partner can have users assigned to it. This is used
     #: for access modelling in the permission-based dashboard

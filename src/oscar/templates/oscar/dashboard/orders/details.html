@@ -167,7 +167,7 @@
             <table class="listing">
                 <thead>
                     <tr>
-                        <th></th>
+                        <th><input type="checkbox" class="bulk-action select-all" name="line" value="{{ line.id }}" /></th>
                         <th>{% trans "Product" %}</th>
                         <th>{% trans "Status" %}</th>
                         <th>{% trans "Original Price" %}</th>
@@ -182,7 +182,7 @@
                 <tbody>
                     {% for line in order.lines.all %}
                     <tr class="line-item {% cycle 'odd' 'even' %}">
-                        <td><input type="checkbox" name="line" value="{{ line.id }}" /></td>
+                        <td><input type="checkbox" class="bulk-action" name="line" value="{{ line.id }}" /></td>
                         <td>
                             <ul>
                                 <li class="product">
@@ -239,14 +239,18 @@
                     {% empty %}
                     <tr><td colspan="4">{% trans 'No notes for this order.' %}</td></tr>
                     {% endfor %}
-                </tbody>
-                <tfoot>
+                    {% block order_note_form %}
                     <tr class="order-note-form">
                         <td colspan="4">
-                            TODO: Render form
-                         </td>
+                            <form method="post">
+                                {% csrf_token %}
+                                {{ order_forms.note_form.as_p | safe }}
+                                <button class="button right" type="submit">Add note</button>
+                            </form>
+                        </td>
                     </tr>
-                </tfoot>
+                    {% endblock %}
+                </tbody>
             </table>
         </div>
         <div class="order-totals col5">

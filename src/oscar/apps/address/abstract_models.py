@@ -2,7 +2,7 @@ import re
 import zlib
 
 from django.conf import settings
-from django.core import exceptions
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
@@ -296,9 +296,9 @@ class AbstractAddress(Orderable):
             country_code = self.country.iso_3166_1_a2
             regex = self.POSTCODES_REGEX.get(country_code, None)
             if regex:
-                msg = _("Addresses in %(country)s require a valid postcode") \
-                    % {'country': self.country}
-                raise exceptions.ValidationError(msg)
+                msg = _("Addresses in %(country)s require a valid "
+                        "postcode") % {'country': self.country}
+                raise ValidationError({'postcode': [msg]})
 
         if self.postcode and self.country_id:
             # Ensure postcodes are always uppercase
@@ -310,10 +310,8 @@ class AbstractAddress(Orderable):
             if regex and not re.match(regex, postcode):
                 msg = _("The postcode '%(postcode)s' is not valid "
                         "for %(country)s") \
-                    % {'postcode': self.postcode,
-                       'country': self.country}
-                raise exceptions.ValidationError(
-                    {'postcode': [msg]})
+                    % {'postcode': self.postcode, 'country': self.country}
+                raise ValidationError({'postcode': [msg]})
 
     def _update_search_text(self):
         search_fields = filter(
@@ -347,8 +345,7 @@ class AbstractAddress(Orderable):
         Name (including title)
         """
         return self.join_fields(
-            ('title', 'first_name', 'last_name'),
-            separator=" ")
+            ('title', 'first_name', 'last_name'), separator=" ")
 
     @property
     def city_state_zip(self):
@@ -379,7 +376,7 @@ class AbstractAddress(Orderable):
             else:
                 value = getattr(self, field)
             field_values.append(value)
-        return field_values
+        return map(str, field_values)
 
     def get_address_field_values(self, fields):
         """
@@ -616,7 +613,7 @@ class AbstractUserAddress(AbstractShippingAddress):
         if self.id:
             qs = qs.exclude(id=self.id)
         if qs.exists():
-            raise exceptions.ValidationError({
+            raise ValidationError({
                 '__all__': [_("This address is already in your address"
                               " book")]})
 

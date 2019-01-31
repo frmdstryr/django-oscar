@@ -14,7 +14,7 @@ class AdminModelChooser(AdminChooser):
     target_model = None  # May be none when using generic models
 
     # ID of the content_type_field
-    content_type_field_id = None
+    content_type_field_id = ''
 
     def __init__(self, model, **kwargs):
         self.target_model = model

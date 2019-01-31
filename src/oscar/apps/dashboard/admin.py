@@ -99,6 +99,27 @@ class DashboardSite:
 
     See wagtail_hooks
     """
+    _instance = None
+
+    # Django uses this to do lookup of different admins
+    _registry = {}
+
+    # List of all model admins
+    _model_admins = []
+
+    @classmethod
+    def instance(cls):
+        if not cls._instance:
+            cls._instance = cls()
+        return cls._instance
+
+    def __init__(self):
+        """ Register using instance to ensure only one exists """
+        if DashboardSite._instance:
+            name = self.__class__.__name__
+            raise RuntimeError("Only one instance of %s can exist,"
+                               "please use instance()" % name)
+
     @property
     def panels(self):
         return (
@@ -133,7 +154,7 @@ class DashboardSite:
             SummaryItem(request) for SummaryItem in self.summary_items
         ]
 
-    def register_modeladmins(self):
+    def register(self):
         for Group in get_classes('dashboard.admin', (
                     'CatalogueGroup',
                     'FulfillmentGroup',
@@ -142,6 +163,24 @@ class DashboardSite:
                     'ContentGroup',
                     'ReportsGroup',
                 )):
-            if Group.items:
-                Group().register_with_wagtail()
+            admin_group = Group()
+            if admin_group.items:
+                admin_group.register_with_wagtail()
+                for ModelAdmin in admin_group.items:
+                    self.register_model_admin(ModelAdmin.instance())
+
+    def register_model_admin(self, model_admin):
+        """ This saves a reference to the model_admin and associates it
+        with this site instance.
+
+        """
+        if model_admin in self._model_admins:
+            raise ImproperlyConfigured(
+                "%s is already registered!" % model_admin)
+
+        # TODO: This blows away and admin that exists there
+        self._registry[model_admin.model] = model_admin
+
+        model_admin.admin_site = self
+        self._model_admins.append(model_admin)
 

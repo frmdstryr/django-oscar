@@ -1,5 +1,6 @@
 from django.conf.urls import url
 from django.utils.translation import ugettext as _
+from django.core.exceptions import ImproperlyConfigured
 
 from oscar.core.loading import get_class
 
@@ -117,6 +118,9 @@ class DashboardAdmin(ModelAdmin, BulkActionsMixin):
     #: Actions which are explicitly restricted from being performed on
     #: this model admin.
     restricted_actions = []
+
+    #: Set during registration
+    admin_site = None
 
     def __init__(self, parent=None):
         """ Create the dashboard admin and save an instance that can be

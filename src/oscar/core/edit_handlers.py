@@ -445,3 +445,60 @@ class GenericInlineFormPanel(InlineFormPanel):
     def related_model(self):
         content_type = getattr(self.instance, self.content_type_field)
         return content_type.model_class()
+
+
+class ModelFormPanel(ObjectList):
+    initial = {}
+    prefix = None
+
+    def __init__(self, children, initial=None, prefix=None, *args, **kwargs):
+        super().__init__(children, *args, **kwargs)
+        if initial is not None:
+            self.initial = initial
+        if prefix is not None:
+            self.prefix = prefix
+
+    def clone_kwargs(self):
+        kwargs = super().clone_kwargs()
+        kwargs['initial'] = self.initial
+        kwargs['prefix'] = self.prefix
+        return kwargs
+
+    def clone(self, **kwargs):
+        """ Shortcut to bind parameters easier
+
+        """
+        new = super().clone()
+        for k, v in kwargs.items():
+            setattr(new, k, v)
+        return new
+
+    def get_initial(self):
+        """Return the initial data to use for forms on this view."""
+        return self.initial.copy()
+
+    def get_prefix(self):
+        """Return the prefix to use for forms."""
+        return self.prefix
+
+    def get_form_kwargs(self):
+        """Return the keyword arguments for instantiating the form."""
+        kwargs = {
+            'initial': self.get_initial(),
+            'prefix': self.get_prefix(),
+        }
+
+        if self.request and self.request.method in ('POST', 'PUT'):
+            kwargs.update({
+                'data': self.request.POST,
+                'files': self.request.FILES,
+            })
+
+        if self.instance is not None:
+            kwargs.update({'instance': self.instance})
+
+        return kwargs
+
+    def get_form(self):
+        Form = self.get_form_class()
+        return Form(**self.get_form_kwargs())

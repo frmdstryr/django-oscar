@@ -5,7 +5,7 @@ from oscar.core.loading import get_class
 # Register site
 DashboardSite = get_class('dashboard.admin', 'DashboardSite')
 dashboard = DashboardSite()
-dashboard.register_modeladmins()
+dashboard.register()
 
 
 # https://docs.wagtail.io/en/latest/reference/hooks.html#construct-main-menu
