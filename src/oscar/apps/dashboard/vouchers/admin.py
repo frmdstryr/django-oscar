@@ -3,6 +3,7 @@ from oscar.apps.dashboard.base import DashboardAdmin
 from oscar.core.loading import get_model
 
 
+ConditionalOffer = get_model('offer', 'ConditionalOffer')
 Voucher = get_model('voucher', 'Voucher')
 VoucherSet = get_model('voucher', 'VoucherSet')
 
