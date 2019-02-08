@@ -20,7 +20,7 @@ class ProductQuerySet(models.query.QuerySet):
         """
         Excludes non-canonical products.
         """
-        return self.filter(parent=None)
+        return self.filter(parent=None, is_enabled=True)
 
 
 @deprecated

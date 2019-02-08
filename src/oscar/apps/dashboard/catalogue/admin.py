@@ -207,7 +207,7 @@ class ProductAdmin(DashboardAdmin, ThumbnailMixin):
         A non-staff user is only allowed access to a product if they are in at
         least one stock record's partner user list.
         """
-        qs = Product.objects.browsable().base_queryset()
+        qs = Product.objects.base_queryset()
 
         # Only show records for user
         user = request.user
