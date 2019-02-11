@@ -252,8 +252,10 @@ class ViewOnlyInlineTablePanel(InlineStackedPanel):
 
 
 class ReadOnlyTablePanel(InlineTablePanel):
+    can_add_new = False
+
     def __init__(self, *args, **kwargs):
-        self.exclude = kwargs.pop('exclude', [])
+        self.exclude = kwargs.pop('exclude', None)
         super().__init__(*args, **kwargs)
 
     def clone(self):
@@ -266,7 +268,7 @@ class ReadOnlyTablePanel(InlineTablePanel):
             return self.panels
         fields = fields_for_model(
             self.db_field.related_model,
-            exclude=[self.db_field.field.name]+self.exclude,
+            exclude=[self.db_field.field.name]+(self.exclude or []),
             formfield_callback=formfield_for_dbfield)
         return [ReadOnlyPanel(field_name) for field_name in fields]
 

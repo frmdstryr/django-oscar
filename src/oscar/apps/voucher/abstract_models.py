@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django import forms
 from django.core import exceptions
 from django.db import models, transaction
 from django.db.models import Sum
@@ -12,7 +13,8 @@ from oscar.core.loading import get_model
 
 
 from oscar.core.edit_handlers import (
-    FieldPanel, MultiFieldPanel, TabbedInterface, ObjectList, InlinePanel
+    FieldPanel, MultiFieldPanel, TabbedInterface, ObjectList, InlinePanel,
+    ReadOnlyPanel, ReadOnlyTablePanel
 )
 from wagtail.core.fields import RichTextField
 from modelcluster.fields import ParentalKey
@@ -68,8 +70,8 @@ class AbstractVoucherSet(ClusterableModel):
         abstract = True
         app_label = 'voucher'
         get_latest_by = 'date_created'
-        verbose_name = _("VoucherSet")
-        verbose_name_plural = _("VoucherSets")
+        verbose_name = _("Voucher Set")
+        verbose_name_plural = _("Voucher Sets")
 
     def __str__(self):
         return self.name
@@ -178,6 +180,28 @@ class AbstractVoucher(ClusterableModel):
     )
 
     date_created = models.DateTimeField(auto_now_add=True)
+
+    # Edit handler
+    edit_handler = TabbedInterface([
+        ObjectList([
+            FieldPanel('name'),
+            FieldPanel('code'),
+            FieldPanel('usage'),
+            FieldPanel('start_datetime'),
+            FieldPanel('end_datetime'),
+            ReadOnlyPanel('voucher_set'),
+        ], heading=_('Details')),
+        ObjectList([
+            FieldPanel('offers', widget=forms.CheckboxSelectMultiple)],
+            heading=_('Offer')),
+        ObjectList([
+                ReadOnlyPanel('num_basket_additions'),
+                ReadOnlyPanel('num_orders'),
+                ReadOnlyPanel('total_discount'),
+                ReadOnlyTablePanel('applications', heading=_('Applications')),
+            ],
+            heading=_('Usage Stats')),
+    ])
 
     class Meta:
         abstract = True

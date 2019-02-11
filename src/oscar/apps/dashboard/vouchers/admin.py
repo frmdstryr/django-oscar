@@ -12,21 +12,19 @@ class VouchersAdmin(DashboardAdmin):
     model = Voucher
     menu_label = _('Voucher')
     menu_icon = 'ticket'
+    dashboard_url = '/offers/coupons/'
     list_display = ('name', 'code', 'is_active', 'usage', 'start_datetime',
                     'end_datetime', 'num_basket_additions', 'num_orders',
                     'total_discount', 'date_created')
-    list_filter = ('usage', 'date_created')
+    list_filter = ('usage', 'date_created', 'voucher_set')
     search_fields = ('name', 'code')
-
-    def get_queryset(self, request):
-        return self.model._default_manager.exclude(
-            offer_type=ConditionalOffer.VOUCHER)
 
 
 class VoucherSetsAdmin(DashboardAdmin):
     model = VoucherSet
     menu_label = _('Voucher Set')
     menu_icon = 'bookmark'
+    dashboard_url = '/offers/coupons/sets/'
     list_display = ('name', 'is_active', 'count', 'offer', 'start_datetime',
                     'end_datetime', 'num_basket_additions', 'num_orders',
                     'total_discount', 'date_created')

@@ -119,6 +119,9 @@ class DashboardSite:
             name = self.__class__.__name__
             raise RuntimeError("Only one instance of %s can exist,"
                                "please use instance()" % name)
+    @property
+    def model_admins(self):
+        return self._model_admins
 
     @property
     def panels(self):
