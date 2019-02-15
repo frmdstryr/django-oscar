@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django.utils.translation import gettext_lazy as _
@@ -10,6 +11,7 @@ from oscar.forms.mixins import PhoneNumberMixin
 User = get_user_model()
 AbstractAddressForm = get_class('address.forms', 'AbstractAddressForm')
 Country = get_model('address', 'Country')
+PaymentBillingAddressForm = get_class('payment.forms', 'BillingAddressForm')
 
 
 class ShippingAddressForm(PhoneNumberMixin, AbstractAddressForm):
@@ -47,7 +49,6 @@ class ShippingMethodForm(forms.Form):
         methods = kwargs.pop('methods', [])
         super().__init__(*args, **kwargs)
         self.fields['method_code'].choices = ((m.code, m.name) for m in methods)
-
 
 
 class PaymentMethodForm(forms.Form):
@@ -92,4 +93,33 @@ class GatewayForm(AuthenticationForm):
         return self.cleaned_data.get('options', None) == self.NEW
 
 
-# The BillingAddress form is in oscar.apps.payment.forms
+class PaymentDetailsForm(forms.Form):
+    # Set to a token from a 3rd-party processor
+    source = forms.CharField(required=True, widget=forms.HiddenInput())
+
+
+class BillingAddressForm(PaymentBillingAddressForm):
+    is_billing_same_as_shipping = forms.BooleanField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Push to top
+        field_order = list(self.fields.keys())
+        field_order.remove('is_billing_same_as_shipping')
+        field_order.insert(0, 'is_billing_same_as_shipping')
+        self.order_fields(field_order)
+
+    def full_clean(self):
+        """ If the is_same_as_shipping box is checked ignore all the other
+        fields.
+
+        """
+        super().full_clean()
+        if self.is_bound and self.is_same_as_shipping():
+            self._errors.clear()
+            return
+
+    def is_same_as_shipping(self):
+        return self.cleaned_data and self.cleaned_data.get(
+            'is_billing_same_as_shipping', None) == True
+

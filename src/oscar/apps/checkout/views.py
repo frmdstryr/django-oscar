@@ -14,11 +14,14 @@ from oscar.core.loading import get_class, get_classes, get_model
 
 from . import signals
 
-ShippingAddressForm, ShippingMethodForm, PaymentMethodForm, GatewayForm \
+ShippingAddressForm, ShippingMethodForm, PaymentMethodForm, \
+BillingAddressForm, PaymentDetailsForm, GatewayForm \
     = get_classes('checkout.forms', ['ShippingAddressForm',
                                      'ShippingMethodForm',
                                      'PaymentMethodForm',
-                                     'GatewayForm'])
+                                     'BillingAddressForm',
+                                     'PaymentDetailsForm',
+                                     'GatewayForm',])
 OrderCreator = get_class('order.utils', 'OrderCreator')
 UserAddressForm = get_class('address.forms', 'UserAddressForm')
 ShippingRepository = get_class('shipping.repository', 'Repository')
@@ -325,12 +328,13 @@ class ShippingMethodView(CheckoutSessionMixin, generic.FormView):
     def form_valid(self, form):
         # Save the code for the chosen shipping method in the session
         # and continue to the next step.
-        self.checkout_session.use_shipping_method(form.cleaned_data['method_code'])
+        method = form.cleaned_data['method_code']
+        self.checkout_session.use_shipping_method(method)
         return self.get_success_response()
 
     def form_invalid(self, form):
-        messages.error(self.request, _("Your submitted shipping method is not"
-                                       " permitted"))
+        messages.error(self.request, _(
+            "Your submitted shipping method is not permitted"))
         return super().form_invalid(form)
 
     def get_success_response(self):
@@ -407,14 +411,105 @@ class PaymentMethodView(CheckoutSessionMixin, generic.FormView):
     def form_valid(self, form):
         # Save the code for the chosen shipping method in the session
         # and continue to the next step.
-        self.checkout_session.pay_by(
-            form.cleaned_data['method_code'])
+        self.checkout_session.pay_by(form.cleaned_data['method_code'])
         return self.get_success_response()
 
     def form_invalid(self, form):
-        messages.error(self.request, _("Your submitted payment method is not"
-                                       " permitted"))
+        messages.error(self.request, _(
+            "Your submitted payment method is not permitted"))
         return super().form_invalid(form)
+
+    def get_success_response(self):
+        return redirect(self.get_success_url())
+
+    def get_success_url(self):
+        return str(self.success_url)
+
+
+class PaymentDetailsView(CheckoutSessionMixin, generic.FormView):
+    template_name = 'checkout/payment_details.html'
+
+    success_url = reverse_lazy('checkout:preview')
+
+    # Each form in this is rendered with the given prefix
+    form_classes = {
+        'payment_form': PaymentDetailsForm,
+        'billing_address_form': BillingAddressForm
+    }
+
+    pre_conditions = [
+        'check_basket_is_not_empty',
+        'check_basket_is_valid',
+        'check_user_email_is_captured',
+        'check_shipping_data_is_captured',
+        'check_payment_method_is_captured'
+    ]
+
+    skip_conditions = [
+        'skip_unless_payment_is_required'
+    ]
+
+    def get_context_data(self, **kwargs):
+        """Insert the form into the context dict."""
+        if 'forms' not in kwargs:
+            forms = self.get_forms()
+        else:
+            forms = kwargs['forms']
+        if 'form' not in kwargs:
+            kwargs['form'] = None  # Prevent default form handling
+        kwargs.update({form.prefix: form for form in forms.values()})
+        return super().get_context_data(**kwargs)
+
+    def get_form_classes(self):
+        return self.form_classes
+
+    def get_forms(self):
+        forms = {}
+        for form_name, form_class in self.get_form_classes().items():
+            kwargs = self.get_form_kwargs()
+            kwargs['prefix'] = form_name
+            forms[form_name] = form_class(**kwargs)
+        return forms
+
+    def post(self, request, *args, **kwargs):
+        """
+        Handle POST requests: instantiate a form instance with the passed
+        POST variables and then check if it's valid.
+        """
+        forms = self.get_forms()
+        if all([form.is_valid() for form in forms.values()]):
+            return self.forms_valid(forms)
+        else:
+            return self.forms_invalid(forms)
+
+    def forms_valid(self, forms):
+        payment_form = forms.get('payment_form')
+        billing_address_form = forms.get('billing_address_form')
+        if billing_address_form:
+            response = self.handle_billing_address_form(billing_address_form)
+            if response:
+                return response
+        if payment_form:
+            response = self.handle_payment_form(payment_form)
+            if response:
+                return response
+        return self.get_success_response()
+
+    def forms_invalid(self, forms):
+        messages.error(self.request, _(
+            "Your submitted information is not correct"))
+        return self.render_to_response(self.get_context_data(forms=forms))
+
+    def handle_billing_address_form(self, form):
+        if form.is_same_as_shipping():
+            self.checkout_session.bill_to_shipping_address()
+        else:
+            address_data = form.cleaned_data
+            address_data.pop('phone_number', None)
+            self.checkout_session.bill_to_new_address(address_data)
+
+    def handle_payment_form(self, form):
+        self.checkout_session.set_payment_data(form.cleaned_data)
 
     def get_success_response(self):
         return redirect(self.get_success_url())
@@ -428,7 +523,7 @@ class PaymentMethodView(CheckoutSessionMixin, generic.FormView):
 # ================
 
 
-class PaymentDetailsView(OrderPlacementMixin, generic.TemplateView):
+class PlaceOrderView(OrderPlacementMixin, generic.TemplateView):
     """
     For taking the details of payment and creating the order.
 
@@ -460,21 +555,12 @@ class PaymentDetailsView(OrderPlacementMixin, generic.TemplateView):
     All projects will need to subclass and customise this class as no payment
     is taken by default.
     """
-    template_name = 'checkout/payment_details.html'
-    template_name_preview = 'checkout/preview.html'
+    template_name = 'checkout/preview.html'
 
     # These conditions are extended at runtime depending on whether we are in
-    # 'preview' mode or not.
-    pre_conditions = [
-        'check_basket_is_not_empty',
-        'check_basket_is_valid',
-        'check_user_email_is_captured',
-        'check_shipping_data_is_captured',
-        'check_payment_method_is_captured']
-
-    # If preview=True, then we render a preview template that shows all order
-    # details ready for submission.
-    preview = False
+    pre_conditions = PaymentDetailsView.pre_conditions + [
+        'check_payment_data_is_captured'
+    ]
 
     def check_basket_is_not_empty(self, request):
         """ Attempt to restore the frozen submitted basket in
@@ -491,34 +577,7 @@ class PaymentDetailsView(OrderPlacementMixin, generic.TemplateView):
                     pass
         return super().check_basket_is_not_empty(request)
 
-    def get_pre_conditions(self, request):
-        if self.preview:
-            # The preview view needs to ensure payment information has been
-            # correctly captured.
-            return self.pre_conditions + ['check_payment_data_is_captured']
-        return super().get_pre_conditions(request)
-
-    def get_skip_conditions(self, request):
-        if not self.preview:
-            # Payment details should only be collected if necessary
-            return ['skip_unless_payment_is_required']
-        return super().get_skip_conditions(request)
-
     def post(self, request, *args, **kwargs):
-        # Posting to payment-details isn't the right thing to do.  Form
-        # submissions should use the preview URL.
-        if not self.preview:
-            return http.HttpResponseBadRequest()
-
-        # We use a custom parameter to indicate if this is an attempt to place
-        # an order (normally from the preview page).  Without this, we assume a
-        # payment form is being submitted from the payment details view. In
-        # this case, the form needs validating and the order preview shown.
-        if request.POST.get('action', '') == 'place_order':
-            return self.handle_place_order_submission(request)
-        return self.handle_payment_details_submission(request)
-
-    def handle_place_order_submission(self, request):
         """
         Handle a request to place an order.
 
@@ -533,25 +592,6 @@ class PaymentDetailsView(OrderPlacementMixin, generic.TemplateView):
         """
         return self.submit(**self.build_submission())
 
-    def handle_payment_details_submission(self, request):
-        """
-        Handle a request to submit payment details.
-
-        This method will need to be overridden by projects that require forms
-        to be submitted on the payment details view.  The new version of this
-        method should validate the submitted form data and:
-
-        - If the form data is valid, show the preview view with the forms
-          re-rendered in the page
-        - If the form data is invalid, show the payment details view with
-          the form errors showing.
-
-        """
-        # No form data to validate by default, so we simply render the preview
-        # page.  If validating form data and it's invalid, then call the
-        # render_payment_details view.
-        return self.render_preview(request)
-
     def render_preview(self, request, **kwargs):
         """
         Show a preview of the order.
@@ -560,7 +600,6 @@ class PaymentDetailsView(OrderPlacementMixin, generic.TemplateView):
         need to pass it back to the view here so it can be stored in hidden
         form inputs.  This avoids ever writing the sensitive data to disk.
         """
-        self.preview = True
         ctx = self.get_context_data(**kwargs)
         return self.render_to_response(ctx)
 
@@ -571,26 +610,10 @@ class PaymentDetailsView(OrderPlacementMixin, generic.TemplateView):
         This method is useful if the submission from the payment details view
         is invalid and needs to be re-rendered with form errors showing.
         """
-        self.preview = False
-        ctx = self.get_context_data(**kwargs)
-        return self.render_to_response(ctx)
-
-    def get_default_billing_address(self):
-        """
-        Return default billing address for user
-
-        This is useful when the payment details view includes a billing address
-        form - you can use this helper method to prepopulate the form.
-
-        Note, this isn't used in core oscar as there is no billing address form
-        by default.
-        """
-        if not self.request.user.is_authenticated:
-            return None
-        try:
-            return self.request.user.addresses.get(is_default_for_billing=True)
-        except UserAddress.DoesNotExist:
-            return self.request.user.addresses.all().first()
+        error = kwargs.get('error', None)
+        if error:
+            messages.error(request, error)
+        return redirect('checkout:payment-details')
 
     def get_previously_placed_order(self, order_number, basket):
         """ Try to lookup order that may have previously been placed but failed
@@ -615,7 +638,7 @@ class PaymentDetailsView(OrderPlacementMixin, generic.TemplateView):
 
     def submit(self, user, basket, shipping_address, shipping_method,  # noqa (too complex (10))
                shipping_charge, billing_address, order_total,
-               payment_kwargs=None, order_kwargs=None):
+               payment_kwargs=None, order_kwargs=None, **kwargs):
         """
         Submit a basket for order placement.
 
@@ -771,11 +794,6 @@ class PaymentDetailsView(OrderPlacementMixin, generic.TemplateView):
 
         # Now redirect save
         return self.handle_successful_order(order)
-
-    def get_template_names(self):
-        if self.preview:
-            return [self.template_name_preview]
-        return [self.template_name]
 
 
 # =========
