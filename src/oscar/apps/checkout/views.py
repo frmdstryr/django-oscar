@@ -504,8 +504,9 @@ class PaymentDetailsView(CheckoutSessionMixin, generic.FormView):
         if form.is_same_as_shipping():
             self.checkout_session.bill_to_shipping_address()
         else:
-            address_data = form.cleaned_data
+            address_data = form.cleaned_data.copy()
             address_data.pop('phone_number', None)
+            address_data.pop('is_billing_same_as_shipping', None)
             self.checkout_session.bill_to_new_address(address_data)
 
     def handle_payment_form(self, form):
