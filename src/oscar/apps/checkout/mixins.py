@@ -74,7 +74,7 @@ class OrderPlacementMixin(CheckoutSessionMixin):
             self._payment_sources = []
         self._payment_sources.append(source)
 
-    def add_payment_event(self, event_type_name, amount, reference=''):
+    def add_payment_event(self, event_type_name, **kwargs):
         """
         Record a payment event for creation once the order is placed
         """
@@ -83,9 +83,7 @@ class OrderPlacementMixin(CheckoutSessionMixin):
         # We keep a local cache of (unsaved) payment events
         if self._payment_events is None:
             self._payment_events = []
-        event = PaymentEvent(
-            event_type=event_type, amount=amount,
-            reference=reference)
+        event = PaymentEvent(event_type=event_type, **kwargs)
         self._payment_events.append(event)
 
     # Placing order methods

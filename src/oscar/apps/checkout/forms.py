@@ -108,6 +108,19 @@ class BillingAddressForm(PaymentBillingAddressForm):
         field_order.remove('is_billing_same_as_shipping')
         field_order.insert(0, 'is_billing_same_as_shipping')
         self.order_fields(field_order)
+        self.adjust_country_field()
+
+    def adjust_country_field(self):
+        countries = Country._default_manager.filter(
+            is_shipping_country=True)
+
+        # No need to show country dropdown if there is only one option
+        if len(countries) == 1:
+            self.fields.pop('country', None)
+            self.instance.country = countries[0]
+        else:
+            self.fields['country'].queryset = countries
+            self.fields['country'].empty_label = None
 
     def full_clean(self):
         """ If the is_same_as_shipping box is checked ignore all the other
@@ -121,5 +134,5 @@ class BillingAddressForm(PaymentBillingAddressForm):
 
     def is_same_as_shipping(self):
         return self.cleaned_data and self.cleaned_data.get(
-            'is_billing_same_as_shipping', None) == True
+            'is_billing_same_as_shipping', None) is True
 

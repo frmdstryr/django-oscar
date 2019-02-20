@@ -36,7 +36,7 @@ class AbstractTransaction(models.Model):
     # We define some sample types but don't constrain txn_type to be one of
     # these as there will be domain-specific ones that we can't anticipate
     # here.
-    AUTHORISE, DEBIT, REFUND = 'Authorise', 'Debit', 'Refund'
+    AUTHORIZE, DEBIT, REFUND = 'Authorize', 'Debit', 'Refund'
     txn_type = models.CharField(_("Type"), max_length=128, blank=True)
 
     amount = models.DecimalField(_("Amount"), decimal_places=2, max_digits=12)
@@ -104,10 +104,6 @@ class AbstractSource(ClusterableModel):
     # checkout process, where we need to pass an instance of this class around
     submission_data = None
 
-    # We keep a list of deferred transactions that are only actually saved when
-    # the source is saved for the first time
-    deferred_txns = None
-
     class Meta:
         abstract = True
         app_label = 'payment'
@@ -121,23 +117,6 @@ class AbstractSource(ClusterableModel):
         if self.reference:
             description += _(" (reference: %s)") % self.reference
         return description
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        if self.deferred_txns:
-            for txn in self.deferred_txns:
-                self._create_transaction(*txn)
-
-    def create_deferred_transaction(self, txn_type, amount, reference=None,
-                                    status=None):
-        """
-        Register the data for a transaction that can't be created yet due to FK
-        constraints.  This happens at checkout where create an payment source
-        and a transaction but can't save them until the order model exists.
-        """
-        if self.deferred_txns is None:
-            self.deferred_txns = []
-        self.deferred_txns.append((txn_type, amount, reference, status))
 
     def _create_transaction(self, txn_type, amount, reference='',
                             status=''):
@@ -156,7 +135,7 @@ class AbstractSource(ClusterableModel):
         self.amount_allocated += amount
         self.save()
         self._create_transaction(
-            AbstractTransaction.AUTHORISE, amount, reference, status)
+            AbstractTransaction.AUTHORIZE, amount, reference, status)
     allocate.alters_data = True
 
     def debit(self, amount=None, reference='', status=''):
