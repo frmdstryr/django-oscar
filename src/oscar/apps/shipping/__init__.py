@@ -1,1 +1,12 @@
-default_app_config = 'oscar.apps.shipping.config.ShippingConfig'
+from django.apps import AppConfig
+from django.utils.translation import gettext_lazy as _
+
+
+
+class ShippingConfig(AppConfig):
+    label = 'shipping'
+    name = 'oscar.apps.shipping'
+    verbose_name = _('Shipping')
+
+
+default_app_config = 'oscar.apps.shipping.ShippingConfig'
