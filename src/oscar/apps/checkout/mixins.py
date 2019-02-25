@@ -330,10 +330,6 @@ class OrderPlacementMixin(CheckoutSessionMixin):
     # Basket helpers
     # --------------
 
-    def get_submitted_basket(self):
-        basket_id = self.checkout_session.get_submitted_basket_id()
-        return Basket._default_manager.get(pk=basket_id)
-
     def freeze_basket(self, basket):
         """
         Freeze the basket so it can no longer be modified
@@ -350,13 +346,8 @@ class OrderPlacementMixin(CheckoutSessionMixin):
         merges in any new products that have been added to a basket that has
         been created while payment.
         """
-        try:
-            fzn_basket = self.get_submitted_basket()
-        except Basket.DoesNotExist:
-            # Strange place.  The previous basket stored in the session does
-            # not exist.
-            pass
-        else:
+        fzn_basket = self.checkout_session.get_submitted_basket()
+        if fzn_basket is not None:
             fzn_basket.thaw()
             if self.request.basket.id != fzn_basket.id:
                 fzn_basket.merge(self.request.basket)

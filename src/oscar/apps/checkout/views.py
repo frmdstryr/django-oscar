@@ -449,6 +449,17 @@ class PaymentDetailsView(CheckoutSessionMixin, generic.FormView):
         'skip_unless_payment_is_required'
     ]
 
+    def check_basket_is_not_empty(self, request):
+        """ Attempt to restore the frozen submitted basket in
+        the case where a payment error occurs.
+        """
+        if request.basket.is_empty:
+            basket = self.checkout_session.get_submitted_basket()
+            if basket is not None:
+                basket.strategy = request.strategy
+                request.basket = basket
+        return super().check_basket_is_not_empty(request)
+
     def get_context_data(self, **kwargs):
         """Insert the form into the context dict."""
         if 'forms' not in kwargs:
@@ -486,21 +497,22 @@ class PaymentDetailsView(CheckoutSessionMixin, generic.FormView):
         payment_form = forms.get('payment_form')
         billing_address_form = forms.get('billing_address_form')
         if billing_address_form:
-            response = self.handle_billing_address_form(billing_address_form)
+            response = self.handle_billing_address_form(
+                billing_address_form, forms)
             if response:
                 return response
         if payment_form:
-            response = self.handle_payment_form(payment_form)
+            response = self.handle_payment_form(payment_form, forms)
             if response:
                 return response
         return self.get_success_response()
 
-    def forms_invalid(self, forms):
-        messages.error(self.request, _(
-            "Your submitted information is not correct"))
+    def forms_invalid(self, forms, message="The information is invalid"):
+        if message:
+            messages.error(self.request, _(message))
         return self.render_to_response(self.get_context_data(forms=forms))
 
-    def handle_billing_address_form(self, form):
+    def handle_billing_address_form(self, form, forms):
         if form.is_same_as_shipping():
             self.checkout_session.bill_to_shipping_address()
         else:
@@ -509,7 +521,7 @@ class PaymentDetailsView(CheckoutSessionMixin, generic.FormView):
             address_data.pop('is_billing_same_as_shipping', None)
             self.checkout_session.bill_to_new_address(address_data)
 
-    def handle_payment_form(self, form):
+    def handle_payment_form(self, form, forms):
         self.checkout_session.set_payment_data(form.cleaned_data)
 
     def get_success_response(self):
@@ -568,14 +580,10 @@ class PlaceOrderView(OrderPlacementMixin, generic.TemplateView):
         the case where a payment error occurs.
         """
         if request.basket.is_empty:
-            basket_id = self.checkout_session.get_submitted_basket_id()
-            if basket_id:
-                try:
-                    basket = self.get_submitted_basket()
-                    basket.strategy = request.strategy
-                    request.basket = basket
-                except Basket.DoesNotExist:
-                    pass
+            basket = self.checkout_session.get_submitted_basket()
+            if basket is not None:
+                basket.strategy = request.strategy
+                request.basket = basket
         return super().check_basket_is_not_empty(request)
 
     def post(self, request, *args, **kwargs):
@@ -707,7 +715,7 @@ class PlaceOrderView(OrderPlacementMixin, generic.TemplateView):
                 # actually place an order.  Not a good situation to be in as a
                 # payment transaction may already have taken place, but needs
                 # to be handled gracefully.
-                msg = str(e)
+                msg = _(str(e))
                 logger.error("Order #%s: unable to place order - %s",
                              order_number, msg, exc_info=True)
                 self.restore_frozen_basket()
@@ -756,7 +764,7 @@ class PlaceOrderView(OrderPlacementMixin, generic.TemplateView):
             # We assume that the details submitted on the payment details view
             # were invalid (eg expired bankcard).
             return self.render_payment_details(
-                self.request, error=msg, **payment_kwargs)
+                self.request, error=_(str(e)), **payment_kwargs)
         except PaymentError as e:
             # A general payment error - Something went wrong which wasn't
             # anticipated.  Eg, the payment gateway is down (it happens), your
@@ -772,7 +780,7 @@ class PlaceOrderView(OrderPlacementMixin, generic.TemplateView):
             self.add_checkout_event(
                 order, CheckoutEvent.EVENT_PAYMENT_ERROR, msg)
             return self.render_preview(
-                self.request, error=error_msg, **payment_kwargs)
+                self.request, error=_(str(e)), **payment_kwargs)
         except Exception as e:
             # Unhandled exception - hopefully, you will only ever see this in
             # development...

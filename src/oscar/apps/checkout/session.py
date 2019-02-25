@@ -16,10 +16,12 @@ PaymentRepository = get_class('payment.repository', 'Repository')
 
 OrderTotalCalculator = get_class(
     'checkout.calculators', 'OrderTotalCalculator')
-ShippingAddress = get_model('order', 'ShippingAddress')
-BillingAddress = get_model('order', 'BillingAddress')
-UserAddress = get_model('address', 'UserAddress')
+
 Country = get_model('address', 'Country')
+Basket = get_model('basket', 'Basket')
+BillingAddress = get_model('order', 'BillingAddress')
+ShippingAddress = get_model('order', 'ShippingAddress')
+UserAddress = get_model('address', 'UserAddress')
 
 
 class CheckoutSessionData(object):
@@ -303,8 +305,14 @@ class CheckoutSessionData(object):
     def set_submitted_basket(self, basket):
         self._set('submission', 'basket_id', basket.id)
 
-    def get_submitted_basket_id(self):
-        return self._get('submission', 'basket_id')
+    def get_submitted_basket(self):
+        basket_id = self._get('submission', 'basket_id')
+        if basket_id is None:
+            return None
+        try:
+            return Basket._default_manager.get(pk=basket_id)
+        except Basket.DoesNotExist:
+            return None  # Should never happen
 
 
 class CheckoutSessionMixin(object):
