@@ -14,7 +14,9 @@
 <table class="listing" id="id_{{ self.formset.prefix }}-FORMS">
     <thead>
         <tr>
-            <th><input type="checkbox" class="bulk-action select-all" /></th>
+            {% if self.can_edit %}
+                <th><input type="checkbox" class="bulk-action select-all" /></th>
+            {% endif %}
             {% if self.headings %}
                 {% for heading in self.headings %}
                     <th>{{ heading }}</th>

@@ -52,12 +52,12 @@
                     {% endif %}
                 </div>
                 <div class="col-sm-3">
-                    <form method="post" action="{% url 'checkout:shipping-method' %}">
+                    <form method="post" action="{% url 'checkout:shipping-method' %}" id="shipping-method-{{ method.code }}">
                         {% csrf_token %}
                         <input type="hidden" name="method_code" value="{{ method.code }}" />
                         <button type="submit" class="btn btn-lg btn-primary pull-right" data-loading-text="{% trans 'Submitting...' %}">{% trans "Select option" %}</button>
                     </form>
-                </div>    
+                </div>
             </div>
         </div>
     {% endfor %}
