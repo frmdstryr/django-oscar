@@ -95,6 +95,7 @@ class AddVoteView(View):
                 review.vote_up(request.user)
             elif form.is_down_vote:
                 review.vote_down(request.user)
+            review.update_totals()
             messages.success(request, _("Thanks for voting!"))
         else:
             for error_list in form.errors.values():
@@ -114,13 +115,13 @@ class ProductReviewList(ListView):
     paginate_by = settings.OSCAR_REVIEWS_PER_PAGE
 
     def get_queryset(self):
-        qs = self.model.objects.approved().filter(product=self.kwargs['product_pk'])
+        qs = self.model.objects.approved().filter(
+            product=self.kwargs['product_pk'])
         self.form = SortReviewsForm(self.request.GET)
+        sort_by = SortReviewsForm.SORT_BY_SCORE_HIGHEST
         if self.request.GET and self.form.is_valid():
             sort_by = self.form.cleaned_data['sort_by']
-            if sort_by == SortReviewsForm.SORT_BY_RECENCY:
-                return qs.order_by('-date_created')
-        return qs.order_by('-score')
+        return qs.order_by(sort_by)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

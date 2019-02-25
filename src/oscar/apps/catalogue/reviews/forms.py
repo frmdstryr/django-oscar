@@ -45,16 +45,23 @@ class VoteForm(forms.ModelForm):
 
 
 class SortReviewsForm(forms.Form):
-    SORT_BY_SCORE = 'score'
-    SORT_BY_RECENCY = 'recency'
+    SORT_BY_SCORE_HIGHEST = '-score'
+    SORT_BY_SCORE_LOWEST = 'score'
+    SORT_BY_MOST_RECENT = '-date_created'
+    SORT_BY_MOST_HELPFUL = '-delta_votes'
+    SORT_BY_MOST_VOTES = '-total_votes'
+
     SORT_REVIEWS_BY_CHOICES = (
-        (SORT_BY_SCORE, _('Score')),
-        (SORT_BY_RECENCY, _('Recency')),
+        (SORT_BY_SCORE_HIGHEST, _('Score (highest first)')),
+        (SORT_BY_SCORE_LOWEST, _('Score (lowest first)')),
+        (SORT_BY_MOST_RECENT, _('Most recent')),
+        (SORT_BY_MOST_HELPFUL, _('Most helpful')),
+        (SORT_BY_MOST_VOTES, _('Most votes')),
     )
 
     sort_by = forms.ChoiceField(
         choices=SORT_REVIEWS_BY_CHOICES,
         label=_('Sort by'),
-        initial=SORT_BY_SCORE,
+        initial=SORT_BY_SCORE_HIGHEST,
         required=False
     )
