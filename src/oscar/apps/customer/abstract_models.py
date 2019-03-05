@@ -111,6 +111,12 @@ class AbstractUser(ClusterableModel,
         verbose_name = _('User')
         verbose_name_plural = _('Users')
 
+    def __str__(self):
+        name = self.full_name
+        if not name:
+            return self.email
+        return '{} <{}>'.format(name, self.email)
+
     @property
     def full_name(self):
         return self.get_full_name()
