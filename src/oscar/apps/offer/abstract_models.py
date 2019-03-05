@@ -268,8 +268,8 @@ class AbstractConditionalOffer(ClusterableModel):
         abstract = True
         app_label = 'offer'
         ordering = ['-priority', 'pk']
-        verbose_name = _("Conditional offer")
-        verbose_name_plural = _("Conditional offers")
+        verbose_name = _("Offer")
+        verbose_name_plural = _("Offers")
 
     def save(self, *args, **kwargs):
         # Check to see if consumption thresholds have been broken
