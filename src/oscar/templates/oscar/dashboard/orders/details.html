@@ -2,6 +2,9 @@
 {% load i18n modeladmin_tags currency_filters %}
 {% block fields_output %}
 {% with instance as order %}
+{% block order_actions_section %}
+{% endblock %}
+
 <div class="order order-details">
     {% block account_info_section %}
     <div class="row account-section">
@@ -155,11 +158,11 @@
                                                 </table>
                                             </li>
                                         {% else %}
-                                            <p>{% trans 'No transactions were recorded for this payment source.' %}</p>
+                                            <p class="help-block help-warning">{% trans 'No transactions were recorded for this payment source.' %}</p>
                                         {% endif %}
                                 {% endfor %}
                             {% else %}
-                                <p>{% trans 'No payments were completed for this order.' %}</p>
+                                <p class="help-block help-warning">{% trans 'No payments were completed for this order.' %}</p>
                             {% endif %}
                         </td>
                     </tr>
@@ -200,7 +203,6 @@
                         <th><input type="checkbox" class="bulk-action select-all" name="line" value="{{ line.id }}" /></th>
                         <th>{% trans "Product" %}</th>
                         <th>{% trans "Status" %}</th>
-                        <th>{% trans "Original Price" %}</th>
                         <th>{% trans "Price" %}</th>
                         <th>{% trans "Qty" %}</th>
                         <th>{% trans "Subtotal" %}</th>
@@ -234,12 +236,11 @@
                         </td>
                         <td>{{ line.status | default:"-" }}</td>
                         <td>{{ line.unit_price_excl_tax|currency:order.currency }}</td>
-                        <td>{{ line.line_price_excl_tax|currency:order.currency }}</td>
                         <td>{{ line.quantity }}</td>
-                        <td>{{ line.line_subtotal|currency:order.currency }}</td>
-                        <td>{{ line.line_total_tax|currency:order.currency }}</td>
+                        <td>{{ line.line_price_excl_tax|currency:order.currency }}</td>
+                        <td>{{ line.line_price_tax|currency:order.currency }}</td>
                         <td>{{ line.discount_incl_tax|currency:order.currency }}</td>
-                        <td>{{ line.line_total|currency:order.currency }}</td>
+                        <td>{{ line.line_price_incl_tax|currency:order.currency }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
