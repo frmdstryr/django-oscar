@@ -15,7 +15,9 @@ from django.utils.translation import gettext_lazy as _
 
 from wagtail.admin import compare
 from wagtail.admin.edit_handlers import *
+from wagtail.core.utils import camelcase_to_underscore
 from wagtail.images.edit_handlers import ImageChooserPanel
+
 
 from oscar.forms import widgets
 from oscar.vendor.modelchooser.edit_handlers import ModelChooserPanel
@@ -211,7 +213,6 @@ class InlineStackedPanel(InlinePanel):
             for field_name, initial in initial_values.items():
                 empty_form.fields[field_name].initial = initial
 
-
         self.empty_child = self.get_child_edit_handler()
         self.empty_child = self.empty_child.bind_to(
             instance=empty_form.instance, form=empty_form, request=self.request)
@@ -271,6 +272,63 @@ class ReadOnlyTablePanel(InlineTablePanel):
             exclude=[self.db_field.field.name]+(self.exclude or []),
             formfield_callback=formfield_for_dbfield)
         return [ReadOnlyPanel(field_name) for field_name in fields]
+
+
+class CustomFieldPanel(EditHandler):
+    """ Use this to add custom form fields to the form. This should be used
+    in with custom form processing.
+
+    Example
+    -------
+        CustomFieldPanel('benefit_range', forms.ModelChoiceField(
+            label=_('Which products get a discount?'),
+            queryset=get_model('offer', 'Range').objects.all(),
+        )),
+
+    """
+    object_template = "wagtailadmin/edit_handlers/single_field_panel.html"
+    field_template = "wagtailadmin/edit_handlers/field_panel_field.html"
+
+    def __init__(self, field_name, form_field, *args, **kwargs):
+        widget = kwargs.pop('widget', None)
+        if widget is not None:
+            self.widget = widget
+        super().__init__(*args, **kwargs)
+        self.field_name = field_name
+        self.form_field = form_field
+
+    def required_fields(self):
+        """ Hack to work-around the fields being rendered as missing
+        """
+        if hasattr(self, 'bound_field'):
+            return [self.field_name]
+        return []
+
+    def clone_kwargs(self):
+        kwargs = super().clone_kwargs()
+        kwargs['field_name'] = self.field_name
+        kwargs['form_field'] = self.form_field
+        return kwargs
+
+    def on_form_bound(self):
+        self.form.fields[self.field_name] = self.form_field
+        self.bound_field = self.form[self.field_name]
+        self.heading = self.bound_field.label
+        self.help_text = self.bound_field.help_text
+
+    def field_type(self):
+        return camelcase_to_underscore(self.form_field.__class__.__name__)
+
+    def render_as_object(self):
+        return mark_safe(render_to_string(self.object_template, {
+            'self': self,
+            'field_panel': self,
+            'field': self.bound_field}))
+
+    def render_as_field(self):
+        return mark_safe(render_to_string(self.field_template, {
+            'field': self.bound_field,
+            'field_type': self.field_type()}))
 
 
 class RowPanel(ObjectList):

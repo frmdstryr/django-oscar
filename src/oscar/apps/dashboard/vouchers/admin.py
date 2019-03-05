@@ -1,6 +1,6 @@
 from django.utils.translation import gettext_lazy as _
 from oscar.apps.dashboard.base import DashboardAdmin
-from oscar.core.loading import get_model
+from oscar.core.loading import get_class, get_model
 
 
 ConditionalOffer = get_model('offer', 'ConditionalOffer')
@@ -18,6 +18,10 @@ class VouchersAdmin(DashboardAdmin):
                     'total_discount', 'date_created')
     list_filter = ('usage', 'date_created', 'voucher_set')
     search_fields = ('name', 'code')
+    create_view_class = get_class(
+        'dashboard.vouchers.views', 'VoucherCreateView')
+    edit_view_class = get_class(
+        'dashboard.vouchers.views', 'VoucherEditView')
 
 
 class VoucherSetsAdmin(DashboardAdmin):

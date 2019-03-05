@@ -14,11 +14,16 @@ from oscar.core.loading import get_model
 
 from oscar.core.edit_handlers import (
     FieldPanel, MultiFieldPanel, TabbedInterface, ObjectList, InlinePanel,
-    ReadOnlyPanel, ReadOnlyTablePanel
+    ReadOnlyPanel, ReadOnlyTablePanel, CustomFieldPanel
 )
 from wagtail.core.fields import RichTextField
 from modelcluster.fields import ParentalKey
 from modelcluster.models import ClusterableModel
+
+
+Benefit = get_model('offer', 'Benefit')
+Range = get_model('offer', 'Range')
+
 
 
 class AbstractVoucherSet(ClusterableModel):
@@ -184,23 +189,39 @@ class AbstractVoucher(ClusterableModel):
     # Edit handler
     edit_handler = TabbedInterface([
         ObjectList([
-            FieldPanel('name'),
-            FieldPanel('code'),
-            FieldPanel('usage'),
-            FieldPanel('start_datetime'),
-            FieldPanel('end_datetime'),
-            ReadOnlyPanel('voucher_set'),
+            MultiFieldPanel([
+                FieldPanel('name'),
+                FieldPanel('code'),
+                FieldPanel('usage'),
+                FieldPanel('start_datetime'),
+                FieldPanel('end_datetime'),
+                CustomFieldPanel('benefit_range', forms.ModelChoiceField(
+                    label=_('Which products get a discount?'),
+                    required=True,
+                    queryset=Range.objects.all(),
+                )),
+                CustomFieldPanel('benefit_type', forms.ChoiceField(
+                    choices=Benefit.TYPE_CHOICES,
+                    required=True,
+                    label=_('Discount type'),
+                )),
+                CustomFieldPanel('benefit_value', forms.DecimalField(
+                    required=True,
+                    label=_('Discount value'),
+                )),
+                CustomFieldPanel('exclusive', forms.BooleanField(
+                    label=_("Exclusive offers cannot be combined on the same items"),
+                    required=False,
+                )),
+            ], heading=_('Voucher')),
         ], heading=_('Details')),
-        ObjectList([
-            FieldPanel('offers', widget=forms.CheckboxSelectMultiple)],
-            heading=_('Offer')),
-        ObjectList([
-                ReadOnlyPanel('num_basket_additions'),
-                ReadOnlyPanel('num_orders'),
-                ReadOnlyPanel('total_discount'),
-                ReadOnlyTablePanel('applications', heading=_('Applications')),
-            ],
-            heading=_('Usage Stats')),
+        #ObjectList([
+                #ReadOnlyPanel('num_basket_additions'),
+                #ReadOnlyPanel('num_orders'),
+                #ReadOnlyPanel('total_discount'),
+                #ReadOnlyTablePanel('applications', heading=_('Applications')),
+            #],
+            #heading=_('Usage Stats')),
     ])
 
     class Meta:

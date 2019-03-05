@@ -152,11 +152,8 @@ class ProductAdmin(DashboardAdmin, ThumbnailMixin):
 
         """
         stockrecord = obj.stockrecords.all().first()
-        in_stock = False
-        icon = 'admin/img/icon-no.svg'
-        if stockrecord:
-            icon = 'admin/img/icon-yes.svg'
-            in_stock = True
+        in_stock = stockrecord is not None
+        icon = 'admin/img/icon-{}.svg'.format('yes' if in_stock else 'no')
         return format_html('<img src="{}" alt="{}">', static(icon), in_stock)
 
     def price(self, obj):

@@ -343,15 +343,9 @@ class AbstractOrder(ClusterableModel):
 
     order_and_accounts_panels = [
         MultiFieldTablePanel([
-            ReadOnlyPanel('number'),
-            ReadOnlyPanel(
-                'date_placed',
-                formatter=lambda order, date: date.strftime("%c")),
-        ], classname='col6', heading=_("Order Information")),
-        MultiFieldTablePanel([
-            ModelChooserPanel('user'),
-            ReadOnlyPanel('email'),
-        ], classname='col6', heading=_("Account Information")),
+            ModelChooserPanel('user', search_fields=[
+                'first_name', 'last_name', 'email']),
+        ], classname='col12', heading=_("Customer Information")),
     ]
 
     address_panels = [
@@ -812,18 +806,6 @@ class AbstractLine(ClusterableModel):
     @property
     def unit_price_tax(self):
         return self.unit_price_incl_tax - self.unit_price_excl_tax
-
-    @property
-    def line_subtotal(self):
-        return self.line_price_excl_tax * self.quantity
-
-    @property
-    def line_total_tax(self):
-        return self.line_price_tax * self.quantity
-
-    @property
-    def line_total(self):
-        return self.line_price_incl_tax * self.quantity
 
     # Shipping status helpers
 
