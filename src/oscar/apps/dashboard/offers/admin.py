@@ -1,3 +1,4 @@
+from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
@@ -21,9 +22,8 @@ class OffersAdmin(DashboardAdmin):
 
     def active(self, obj):
         active = obj.is_available()
-        return format_html('<span class="label label-{}">{}</span>',
-                           'success' if active else 'danger',
-                           'Yes' if active else 'No')
+        icon = 'admin/img/icon-{}.svg'.format('yes' if active else 'no')
+        return format_html('<img src="{}" alt="{}">', static(icon), active)
 
     def get_queryset(self, request):
         return self.model._default_manager.exclude(
