@@ -108,8 +108,8 @@ class AbstractUser(ClusterableModel,
 
     class Meta:
         abstract = True
-        verbose_name = _('User')
-        verbose_name_plural = _('Users')
+        verbose_name = _('Customer')
+        verbose_name_plural = _('Customers')
 
     def __str__(self):
         name = self.full_name

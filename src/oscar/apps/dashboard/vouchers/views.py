@@ -6,14 +6,10 @@ from wagtail.admin import messages, widgets
 
 CreateView = get_class('dashboard.views', 'CreateView')
 EditView = get_class('dashboard.views', 'EditView')
-
-Voucher = get_model('voucher', 'Voucher')
-VoucherSet = get_model('voucher', 'VoucherSet')
-ConditionalOffer = get_model('offer', 'ConditionalOffer')
 Benefit = get_model('offer', 'Benefit')
-Range = get_model('offer', 'Range')
+ConditionalOffer = get_model('offer', 'ConditionalOffer')
 Condition = get_model('offer', 'Condition')
-OrderDiscount = get_model('order', 'OrderDiscount')
+Voucher = get_model('voucher', 'Voucher')
 
 
 class VoucherCreateView(CreateView):
