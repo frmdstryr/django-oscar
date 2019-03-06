@@ -27,7 +27,7 @@
 						<tr>
 							<td class="title">
 								<h2><a class="model-choice" data-pk="{{ item.pk }}" href="#">
-									{% block result_item %}{% include chooser.choice_template with item=item %}{% endblock %}
+									{% block result_item %}{% include chooser.choice_template with item=item chooser=chooser %}{% endblock %}
 								</a></h2>
 							</td>
 						</tr>

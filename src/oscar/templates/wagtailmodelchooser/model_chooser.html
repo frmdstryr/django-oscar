@@ -10,7 +10,7 @@
 
     <div class="chosen">
         <div class="chosen-item">
-            {% block chosen_state_view %}{% include widget.choice_template with item=item %}{% endblock %}
+            {% block chosen_state_view %}{% include widget.choice_template with item=item chooser=chooser %}{% endblock %}
         </div>
 
         {% block choosen_actions %}

@@ -21,6 +21,7 @@ class AdminModelChooser(AdminChooser):
         name = 'a value'
         if self.target_model:
             name = self.target_model._meta.verbose_name
+        self.chooser_ctx = kwargs.pop('ctx', None)
         self.choose_one_text = _('Choose %s') % name
         self.choose_another_text = _('Choose another')
         self.link_to_chosen_text = kwargs.pop('link_to_chosen_text', _('Edit'))
@@ -29,6 +30,7 @@ class AdminModelChooser(AdminChooser):
         self.link_to_add_url = kwargs.pop('link_to_add_url', '#')
         self.show_edit_link = kwargs.get('show_edit_link', False)
         self.show_add_link = kwargs.pop('show_add_link', False)
+        self.display_fields = kwargs.pop('display_fields', [])
         super(AdminModelChooser, self).__init__(**kwargs)
 
     def render_html(self, name, value, attrs):

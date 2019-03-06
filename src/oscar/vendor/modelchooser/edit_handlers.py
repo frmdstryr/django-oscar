@@ -1,5 +1,3 @@
-import operator
-from functools import reduce
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 from django.db.models.query import EmptyQuerySet
@@ -8,15 +6,14 @@ from django.template.loader import render_to_string
 from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
 from wagtail.admin.edit_handlers import BaseChooserPanel, get_form_for_model
-from django.contrib.admin.utils import lookup_needs_distinct
 from django.contrib.contenttypes.fields import GenericForeignKey
 
 
 from .widgets import AdminModelChooser
-from . import registry
+from . import registry, ModelChooserMixin
 
 
-class ModelChooserPanel(BaseChooserPanel):
+class ModelChooserPanel(BaseChooserPanel, ModelChooserMixin):
     # Model this panel will be bound to
     model = None
     request = None
@@ -36,32 +33,18 @@ class ModelChooserPanel(BaseChooserPanel):
     icon = 'placeholder'
     header_icon = None
 
-    # Change the modal chooser template
-    chooser_template = None
-    modal_template = 'wagtailmodelchooser/modal.html'
-    results_template = 'wagtailmodelchooser/results.html'
-
-    # Use this to change how each choice in the result list and the selected
-    # value is displayed
-    choice_template = 'wagtailmodelchooser/choice.html'
-
-    # Key used to store this chooser in the registry
-    chooser_id = None
-
-    # Fields to search
-    search_fields = []
-
-    # Queryset filters
-    default_filters = {}
-
     def __init__(self, field_name, search_fields=None,
                  show_add_link=None, show_edit_link=None,
                  link_to_add_url=None, link_to_edit_url=None,
                  show_label=None, default_filters=None, generic_name=None,
-                 **kwargs):
+                 display_fields=None, **kwargs):
         super().__init__(field_name, **kwargs)
         if search_fields is not None:
             self.search_fields = search_fields
+        if default_filters is not None:
+            self.default_filters = default_filters
+        if display_fields is not None:
+            self.display_fields = display_fields
         if show_add_link is not None:
             self.show_add_link = show_add_link
         if show_edit_link is not None:
@@ -70,8 +53,6 @@ class ModelChooserPanel(BaseChooserPanel):
             self.link_to_add_url = link_to_add_url
         if link_to_edit_url is not None:
             self.link_to_edit_url = link_to_edit_url
-        if default_filters is not None:
-            self.default_filters = default_filters
         if generic_name is not None:
             self.generic_name = generic_name
 
@@ -92,6 +73,7 @@ class ModelChooserPanel(BaseChooserPanel):
             link_to_add_url=self.link_to_add_url,
             link_to_edit_url=self.link_to_edit_url,
             default_filters=self.default_filters,
+            display_fields=self.display_fields,
         )
         panel.content_type = self.content_type
         return panel
@@ -131,7 +113,6 @@ class ModelChooserPanel(BaseChooserPanel):
             ct_id = self.form[self.db_field.ct_field].id_for_label
             widget.content_type_field_id = ct_id
 
-
     def required_fields(self):
         if self.is_generic:
             db_field = self.db_field
@@ -141,6 +122,7 @@ class ModelChooserPanel(BaseChooserPanel):
     def widget_overrides(self):
         return {self.field_name: AdminModelChooser(
             model=self.target_model,
+            display_fields=self.display_fields,
             link_to_add_url=self.get_link_to_add_url(),
             link_to_edit_url=self.get_link_to_edit_url(),
             show_add_link=self.show_add_link,
@@ -154,7 +136,8 @@ class ModelChooserPanel(BaseChooserPanel):
         try:
             model = self.model
         except AttributeError:
-            raise ImproperlyConfigured("%r must be bound to a model before calling db_field" % self)
+            raise ImproperlyConfigured(
+                "%r must be bound to a model before calling db_field" % self)
 
         return model._meta.get_field(self.generic_name or self.field_name)
 
@@ -230,38 +213,6 @@ class ModelChooserPanel(BaseChooserPanel):
     # ========================================================================
     # Chooser queryset
     # ========================================================================
-    def get_queryset(self, request):
-        """ Get the queryset for the chooser. Override this as necessary.
-
-        `model` is the  original model this panel was bound to and
-        `target_model` is the model of the field being chosen.
-
-        """
-        qs = self.target_model._default_manager.all()
-        if self.default_filters:
-            qs = qs.filter(**self.default_filters)
-        return qs
-
-    def get_search_results(self, request, queryset, search_term):
-        """ This is pulled from the modeladmin IndexView
-        """
-        use_distinct = False
-        opts = self.target_model._meta
-        if self.search_fields and search_term:
-            orm_lookups = ['%s__icontains' % str(search_field)
-                           for search_field in self.search_fields]
-            for bit in search_term.split():
-                or_queries = [models.Q(**{orm_lookup: bit})
-                              for orm_lookup in orm_lookups]
-                queryset = queryset.filter(reduce(operator.or_, or_queries))
-            if not use_distinct:
-                for search_spec in orm_lookups:
-                    if lookup_needs_distinct(opts, search_spec):
-                        use_distinct = True
-                        break
-
-        return queryset, use_distinct
-
     def get_instance(self, request, panel_data):
         """ Get the original instance for the chooser or create an empty
         model if no pk is given.
