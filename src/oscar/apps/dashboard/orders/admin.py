@@ -102,6 +102,8 @@ class OrderAdmin(DashboardAdmin):
         form = self.get_address_form(request, order.billing_address)
         if request.method == 'POST' and form.is_valid():
             form.save()
+            order.billing_address = form.instance
+            order.save()
             html = self.render_address(form.instance)
             return render_modal_workflow(request, None, None, None, {
                 'step': 'done',
@@ -118,6 +120,8 @@ class OrderAdmin(DashboardAdmin):
         form = self.get_address_form(request, order.shipping_address)
         if request.method == 'POST' and form.is_valid():
             form.save()
+            order.shipping_address = form.instance
+            order.save()
             html = self.render_address(form.instance)
             return render_modal_workflow(request, None, None, None, {
                 'step': 'done',

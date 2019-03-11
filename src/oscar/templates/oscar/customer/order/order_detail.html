@@ -165,4 +165,16 @@
             <td>{{ order.shipping_address.notes|linebreaks }}</td>
         </tr>
     </table>
+
+    {% block order_notes %}
+        {% if order.customer_notes.exists %}
+            <h2>{% trans 'Order Notes' %}</h2>
+            <ul>
+                {% for note in order.customer_notes %}
+                    <li>{{note.message}} on {{note.date_created}}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endblock %}
+
 {% endblock tabcontent %}

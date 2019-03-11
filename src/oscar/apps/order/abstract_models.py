@@ -495,6 +495,10 @@ class AbstractOrder(ClusterableModel):
         return self.discounts.filter(
             category=AbstractOrderDiscount.DEFERRED)
 
+    @property
+    def customer_notes(self):
+        return self.notes.filter(visible_on_frontend=True)
+
     def set_date_placed_default(self):
         if self.date_placed is None:
             self.date_placed = now()
@@ -536,6 +540,14 @@ class AbstractOrderNote(models.Model):
     note_type = models.CharField(_("Note Type"), max_length=128, blank=True)
 
     message = models.TextField(_("Message"))
+
+    # Notify customer by email
+    notify_by_email = models.BooleanField(_('Notify by email'), default=False)
+
+    # If the note should be shown to the customer
+    visible_on_frontend = models.BooleanField(
+        _('Visible on frontend'), default=False)
+
     date_created = models.DateTimeField(_("Date Created"), auto_now_add=True)
     date_updated = models.DateTimeField(_("Date Updated"), auto_now=True)
 

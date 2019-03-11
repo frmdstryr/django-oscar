@@ -9,14 +9,16 @@ from oscar.core.edit_handlers import ModelFormPanel, FieldPanel
 
 from wagtail.admin import messages
 
+
 OrderNote = get_model('order', 'OrderNote')
 
 
 class OrderDetailsView(DetailView):
 
     order_note_handler = ModelFormPanel([
-        #FieldPanel('note_type'),
-        FieldPanel('message')
+        FieldPanel('message'),
+        FieldPanel('notify_by_email'),
+        FieldPanel('visible_on_frontend'),
     ], prefix='order_note')
 
     def get_context_data(self, **kwargs):
