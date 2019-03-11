@@ -8,6 +8,7 @@ from django.template.loader import get_template
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.crypto import get_random_string
+from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
 from oscar.core.compat import AUTH_USER_MODEL
@@ -117,7 +118,7 @@ class AbstractUser(ClusterableModel,
             return self.email
         return '{} <{}>'.format(name, self.email)
 
-    @property
+    @cached_property
     def full_name(self):
         return self.get_full_name()
 
@@ -127,6 +128,18 @@ class AbstractUser(ClusterableModel,
 
     def get_short_name(self):
         return self.first_name
+
+    @cached_property
+    def last_order(self):
+        return self.orders.all().order_by('date_placed').first()
+
+    @cached_property
+    def default_shipping_address(self):
+        return self.addresses.filter(is_default_for_shipping=True).first()
+
+    @cached_property
+    def default_billing_address(self):
+        return self.addresses.filter(is_default_for_billing=True).first()
 
     def _migrate_alerts_to_user(self):
         """

@@ -134,33 +134,45 @@ class OrderAdmin(DashboardAdmin):
                     'step': 'edit'})
 
 
-
 class CustomerAdmin(DashboardAdmin):
     model = Customer
     menu_label = _('Customers')
     menu_icon = 'user'
     dashboard_url = 'customers'
-    inspect_view_enabled = True
-    list_display = ('name', 'email', 'number_of_orders', 'last_order',
-                    'last_login', 'date_joined')
+    list_display = ('name', 'email', 'phone_number', 'address',
+                    'number_of_orders', 'last_order', 'last_login',
+                    'date_joined')
     list_filter = ('date_joined', 'is_active', 'is_staff')
     search_fields = ('email', 'first_name', 'last_name')
 
     # =========================================================================
     # Display fields
     # =========================================================================
-    def name(self, obj):
-        return obj.get_full_name()
+    def name(self, customer):
+        return customer.get_full_name()
 
-    def number_of_orders(self, obj):
-        return obj.orders.count()
+    def phone_number(self, customer):
+        addr = customer.addresses.filter(phone_number__isnull=False).first()
+        if addr is not None:
+            return addr.phone_number
 
-    def last_order(self, obj):
-        order = obj.orders.all().order_by('date_placed').first()
+    def address(self, customer):
+        addr = customer.default_billing_address
+        if addr is None:
+            addr = customer.default_shipping_address
+            if addr is None:
+                addr = customer.addresses.first()
+
+        if addr is not None:
+            fields = '<br/>'.join(addr.active_address_fields()[1:])
+            return format_html('<address>%s</address>' % fields)
+
+    def number_of_orders(self, customer):
+        return customer.orders.count()
+
+    def last_order(self, customer):
+        order = customer.last_order
         if order:
             url = OrderAdmin.instance().get_action_url(
                 'view', quote(order.pk))
             return format_html('<a href="{}">{}</a>', url, order)
-
-
-
