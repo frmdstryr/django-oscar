@@ -175,11 +175,10 @@ class AbstractOrder(ClusterableModel):
     def _create_order_status_change(self, old_status, new_status):
         # Not setting the status on the order as that should be handled before
         # Send signal for handling status changed
-        order_status_changed.send(sender=self,
-                                  order=self,
-                                  old_status=old_status,
-                                  new_status=new_status)
-        self.status_changes.create(old_status=old_status, new_status=new_status)
+        order_status_changed.send(sender=self, order=self,
+                                  old_status=old_status, new_status=new_status)
+        self.status_changes.create(
+            old_status=old_status, new_status=new_status)
 
     @property
     def is_anonymous(self):

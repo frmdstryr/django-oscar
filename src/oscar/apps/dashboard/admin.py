@@ -142,7 +142,8 @@ class DashboardSite:
 
     def construct_main_menu(self, request, menu_items):
         # Remove images and documents
-        excluded = ('documents',)
+        return #
+        #excluded = ('documents',)
         menu_items[:] = [
             item for item in menu_items if item.name not in excluded
         ]

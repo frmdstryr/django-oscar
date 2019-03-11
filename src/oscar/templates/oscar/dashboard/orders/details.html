@@ -1,7 +1,15 @@
 {% extends "modeladmin/inspect.html" %}
-{% load i18n modeladmin_tags currency_filters %}
+{% load i18n modeladmin_tags currency_filters static %}
+
+{% block extra_js %}
+    {{ block.super }}
+    <script src="{% static "wagtailadmin/js/modal-workflow.js" %}"></script>
+    <script src="{% static "oscar/js/oscar/modal-editor.js" %}"></script>
+{% endblock %}
+
 {% block fields_output %}
 {% with instance as order %}
+
 {% block order_actions_section %}
 {% endblock %}
 
@@ -66,7 +74,8 @@
                 <tbody>
                     <tr class="odd">
                         <td>
-                            <a class="action-edit" href="#todo">Edit</a>
+                            <a class="action-edit modal-editor" data-url="{% url 'order_order_modeladmin_edit_billing_address' order.id %}" href="#billing-address">Edit</a>
+                            <div id="billing-address">
                             {% if order.billing_address %}
                                 <address>
                                     {% for field in order.billing_address.active_address_fields %}
@@ -76,6 +85,7 @@
                             {% else %}
                                 <p>{% trans 'No billing address was provided for this order.' %}</p>
                             {% endif %}
+                            </div>
                         </td>
                     </tr>
                 </tbody>
@@ -92,7 +102,8 @@
                 <tbody>
                     <tr class="odd">
                         <td>
-                            <a class="action-edit" href="#todo">Edit</a>
+                            <a class="action-edit modal-editor" data-url="{% url 'order_order_modeladmin_edit_shipping_address' order.id %}" href="#shipping-address">Edit</a>
+                            <div id="shipping-address">
                             {% if order.shipping_address %}
                                 <address>
                                     {% for field in order.shipping_address.active_address_fields %}
@@ -102,6 +113,7 @@
                             {% else %}
                                 <p>{% trans 'No shipping address was provided for this order.' %}</p>
                             {% endif %}
+                            </div>
                          </td>
                     </tr>
                 </tbody>
@@ -334,3 +346,4 @@
 </div>
 {% endwith %}
 {% endblock %}
+

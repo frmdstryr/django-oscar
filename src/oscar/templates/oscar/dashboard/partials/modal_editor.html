@@ -1,0 +1,25 @@
+{% load i18n %}
+{% block header %}
+{% include "wagtailadmin/shared/header.html" with title=title tabbed=1 merged=1 icon="doc-full-inverse" %}
+{% endblock %}
+<div class="tab-content">
+    {% block content %}
+    <section class="active nice-padding">
+        <form class="modal-form" action="{{ request.path }}" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <ul class="fields">
+                {% for field in form %}
+                    {% if field.is_hidden %}
+                        {{ field }}
+                    {% else %}
+                        {% include "wagtailadmin/shared/field_as_li.html" with field=field %}
+                    {% endif %}
+                {% endfor %}
+                <li>
+                    <button type="submit" class="button button-longrunning" data-clicked-text="{% trans 'Saving…' %}"><span class="icon icon-spinner"></span><em>{% trans 'Save' %}</em></button>
+                </li>
+            </ul>
+        </form>
+    </section>
+    {% endblock %}
+</div>
