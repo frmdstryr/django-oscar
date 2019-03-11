@@ -74,7 +74,7 @@
                 <tbody>
                     <tr class="odd">
                         <td>
-                            <a class="action-edit modal-editor" data-url="{% url 'order_order_modeladmin_edit_billing_address' order.id %}" href="#billing-address">Edit</a>
+                            <a class="action-edit modal-editor" data-url="{% url 'order_order_modeladmin_edit_billing_address' order.id %}" href="#edit-billing-address">Edit</a>
                             <div id="billing-address">
                             {% if order.billing_address %}
                                 <address>
@@ -102,7 +102,7 @@
                 <tbody>
                     <tr class="odd">
                         <td>
-                            <a class="action-edit modal-editor" data-url="{% url 'order_order_modeladmin_edit_shipping_address' order.id %}" href="#shipping-address">Edit</a>
+                            <a class="action-edit modal-editor" data-url="{% url 'order_order_modeladmin_edit_shipping_address' order.id %}" href="#edit-shipping-address">Edit</a>
                             <div id="shipping-address">
                             {% if order.shipping_address %}
                                 <address>
