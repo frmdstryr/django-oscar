@@ -17,7 +17,7 @@ class OrderDetailsView(DetailView):
 
     order_note_handler = ModelFormPanel([
         FieldPanel('message'),
-        FieldPanel('notify_by_email'),
+        #FieldPanel('notify_by_email'), # TODO: Support this
         FieldPanel('visible_on_frontend'),
     ], prefix='order_note')
 
@@ -51,11 +51,10 @@ class OrderDetailsView(DetailView):
     def form_valid(self, form):
         instance = form.save()
         messages.success(self.request, _('Action completed'))
-        return redirect(self.index_url)
+        return redirect(self.request.path)
 
     def form_invalid(self, form):
         messages.validation_error(
             self.request,
-            _("The action could not be completed due to errors."), form
-        )
+            _("The action could not be completed due to errors."), form)
         return self.render_to_response(self.get_context_data())

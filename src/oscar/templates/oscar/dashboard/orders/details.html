@@ -268,16 +268,20 @@
             <table class="listing">
                 <thead>
                     <tr>
-                        <th colspan="4"><h3>{% trans 'Notes for this order' %}</h3></th>
+                        <th colspan="3"><h3>{% trans 'Notes for this order' %}</h3></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for note in order.notes.all %}
                     <tr class="{% cycle 'odd' 'even' %}">
-                        <td>{{note.note_type}}</td>
-                        <td>{{note.message}}</td>
-                        <td>{{note.user}}</td>
-                        <td>{{note.date_created}}</td>
+                        <td>{% if note.note_type %}{{note.note_type}}{% else %}Message{% endif %}</td>
+                        <td>
+                            <p>{{note.message}}</p>
+                            {% if note.visible_on_frontend %}
+                                <p class="help-block help-info condensed">{% trans 'This note is visible to the customer' %}</p>
+                            {% endif %}
+                        </td>
+                        <td><small>Added by</small><div>{{note.user}}</div><small>on {{ note.date_created }}</small></td>
                     </tr>
                     {% empty %}
                     <tr><td colspan="4">{% trans 'No notes for this order.' %}</td></tr>

@@ -169,11 +169,12 @@
     {% block order_notes %}
         {% if order.customer_notes.exists %}
             <h2>{% trans 'Order Notes' %}</h2>
-            <ul>
-                {% for note in order.customer_notes %}
-                    <li>{{note.message}} on {{note.date_created}}</li>
-                {% endfor %}
-            </ul>
+            {% for note in order.customer_notes %}
+                <hr />
+                <i>On {{note.date_created}}</i>
+                <p>{{note.message}}</p>
+
+            {% endfor %}
         {% endif %}
     {% endblock %}
 
