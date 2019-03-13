@@ -43,7 +43,7 @@ class CustomersGroup(DashboardAdminGroup):
     @property
     def items(self):
         return (
-            get_class('dashboard.orders.admin', 'CustomerAdmin'),
+            get_class('dashboard.customers.admin', 'CustomerAdmin'),
             get_class('dashboard.catalogue.admin', 'ProductReviewAdmin'),
         )
 

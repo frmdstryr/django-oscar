@@ -8,20 +8,27 @@ from django.template.loader import get_template
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.crypto import get_random_string
+from django.utils.html import format_html
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
 from oscar.core.compat import AUTH_USER_MODEL
 from oscar.core.loading import get_class
-from oscar.models.fields import AutoSlugField
+from oscar.models.fields import AutoSlugField, ParentalKey
 
 from modelcluster.models import ClusterableModel
 from oscar.core.edit_handlers import (
     TabbedInterface, ObjectList, InlinePanel, ReadOnlyPanel, FieldPanel,
-    MultiFieldPanel
+    MultiFieldPanel, ModelListPanel
 )
 
 CommunicationTypeManager = get_class('customer.managers', 'CommunicationTypeManager')
+
+
+def preview_email(email):
+    return format_html(
+        '<iframe class="email-preview" srcdoc="{}"></iframe>', email.body_html)
+preview_email.short_description = _('Email')
 
 
 class UserManager(auth_models.BaseUserManager):
@@ -82,6 +89,9 @@ class AbstractUser(ClusterableModel,
 
     USERNAME_FIELD = 'email'
 
+    # ========================================================================
+    # Edit handlers
+    # ========================================================================
     general_panels = [
         FieldPanel('first_name'),
         FieldPanel('last_name'),
@@ -90,21 +100,20 @@ class AbstractUser(ClusterableModel,
         ReadOnlyPanel('date_joined'),
     ]
 
-    permission_panels = [
-        FieldPanel('is_staff'),
-        FieldPanel('is_active'),
-        FieldPanel('groups', widget=widgets.CheckboxSelectMultiple),
-        #FieldPanel('permission_set', widget=widgets.CheckboxSelectMultiple),
-    ]
-
     address_panels = [
         InlinePanel('addresses', label=_('Address')),
     ]
 
+    communication_panels = [
+        ModelListPanel(
+            'emails', label=_('Emails'),
+            list_display=['date_sent', 'subject', preview_email],),
+    ]
+
     edit_handler = TabbedInterface([
         ObjectList(general_panels, heading=_('General')),
-        ObjectList(permission_panels, heading=_('Permissions')),
         ObjectList(address_panels, heading=_('Addresses')),
+        ObjectList(communication_panels, heading=_('Communication')),
     ])
 
     class Meta:
@@ -165,7 +174,7 @@ class AbstractEmail(models.Model):
     This is a record of all emails sent to a customer.
     Normally, we only record order-related emails.
     """
-    user = models.ForeignKey(
+    user = ParentalKey(
         AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='emails',
@@ -180,6 +189,7 @@ class AbstractEmail(models.Model):
     class Meta:
         abstract = True
         app_label = 'customer'
+        ordering = ('-date_sent',)
         verbose_name = _('Email')
         verbose_name_plural = _('Emails')
 
@@ -317,7 +327,7 @@ class AbstractCommunicationEventType(models.Model):
 
 
 class AbstractNotification(models.Model):
-    recipient = models.ForeignKey(
+    recipient = ParentalKey(
         AUTH_USER_MODEL,
         db_index=True,
         on_delete=models.CASCADE,
@@ -378,7 +388,7 @@ class AbstractProductAlert(models.Model):
     # A user is only required if the notification is created by a
     # registered user, anonymous users will only have an email address
     # attached to the notification
-    user = models.ForeignKey(
+    user = ParentalKey(
         AUTH_USER_MODEL,
         blank=True,
         db_index=True,

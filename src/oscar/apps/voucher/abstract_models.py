@@ -14,7 +14,7 @@ from oscar.core.loading import get_model
 
 from oscar.core.edit_handlers import (
     FieldPanel, MultiFieldPanel, TabbedInterface, ObjectList, InlinePanel,
-    ReadOnlyPanel, ReadOnlyTablePanel, CustomFieldPanel
+    ReadOnlyPanel, CustomFieldPanel
 )
 from wagtail.core.fields import RichTextField
 from modelcluster.fields import ParentalKey

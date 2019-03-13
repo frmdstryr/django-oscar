@@ -235,11 +235,14 @@ class InlineTablePanel(InlineStackedPanel):
 
     def __init__(self, *args, **kwargs):
         self.headings = kwargs.pop('headings', None)
+        if 'template' in kwargs:
+            self.template = kwargs.pop('template')
         super().__init__(*args, **kwargs)
 
     def clone(self):
         panel = super().clone()
         panel.headings = self.headings
+        panel.template = self.template
         return panel
 
 
@@ -252,26 +255,87 @@ class ViewOnlyInlineTablePanel(InlineStackedPanel):
     can_add_new = False
 
 
-class ReadOnlyTablePanel(InlineTablePanel):
-    can_add_new = False
+class ModelListPanel(HelpPanel):
+    """ A panel which simulates a dashboard index page for the given field name
+    """
+    template = "dashboard/edit_handlers/model_list_panel.html",
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, field_name, *args, **kwargs):
+        self.field_name = field_name
         self.exclude = kwargs.pop('exclude', None)
+        self.label = kwargs.pop('label', None)
+        self.list_display = kwargs.pop('list_display', ['__str__'])
+        self.sortable_by = kwargs.pop('sortable_by', None)
+        if 'template' not in kwargs:
+            kwargs['template'] = self.template
         super().__init__(*args, **kwargs)
 
-    def clone(self):
-        panel = super().clone()
-        panel.exclude = self.exclude
-        return panel
+    def clone_kwargs(self):
+        kwargs = super().clone_kwargs()
+        kwargs.update({
+            'field_name': self.field_name,
+            'exclude': self.exclude,
+            'label': self.label,
+            'template': self.template,
+            'list_display': self.list_display,
+            'sortable_by': self.sortable_by,
+        })
+        return kwargs
 
-    def get_panel_definitions(self):
-        if self.panels is not None:
-            return self.panels
-        fields = fields_for_model(
-            self.db_field.related_model,
-            exclude=[self.db_field.field.name]+(self.exclude or []),
-            formfield_callback=formfield_for_dbfield)
-        return [ReadOnlyPanel(field_name) for field_name in fields]
+    @cached_property
+    def db_field(self):
+        try:
+            model = self.model
+        except AttributeError:
+            raise ImproperlyConfigured(
+                "%r must be bound to a model before calling db_field" % self)
+        return model._meta.get_field(self.field_name)
+
+    def render(self):
+        # Clone and bind to the related field  model
+        view = self.bind_to(model=self.db_field.related_model,
+                            instance=self.instance)
+        view.model_admin = view
+        view.verbose_name_plural = self.model._meta.verbose_name_plural
+        return mark_safe(render_to_string(self.template, {
+            'self': view,
+            'view': view,
+            'request': self.request,
+            'object_list': self.get_queryset()
+        }))
+
+    # ========================================================================
+    # Modeladmin API
+    # ========================================================================
+    def get_queryset(self):
+        return getattr(self.instance, self.field_name).all()[:10]
+
+    def get_query_string(self, params):
+        return ''
+
+    def get_empty_value_display(self, field_name):
+        return '-'
+
+    def get_ordering_field_columns(self):
+        return {}
+
+    def get_extra_class_names_for_field_col(self, result, field_name):
+        return []
+
+    def get_extra_attrs_for_field_col(self, result, field_name):
+        return {}
+
+    def get_extra_attrs_for_row(self, result, context):
+        return {}
+
+    def get_buttons_for_obj(self, obj):
+        return []
+
+    def get_list_display_add_buttons(self, request):
+        pass
+
+    def get_list_display(self, request):
+        return self.list_display
 
 
 class CustomFieldPanel(EditHandler):

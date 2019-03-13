@@ -1,0 +1,11 @@
+{% load i18n modeladmin_tags %}
+<li class="object">
+{% if self.label %}<h2><label>{{ self.label }}</label></h2>{% endif %}
+<fieldset>
+    <div class="object-layout_big-part result-list">
+        {% block result_list %}
+            {% result_list %}
+        {% endblock %}
+    </div>
+</fieldset>
+</li>

@@ -25,3 +25,9 @@ td.modal-editor::after {
 .field-inventory li {
     white-space: nowrap;
 }
+
+.email-preview {
+    width: 100%;
+    border: 0;
+    min-height: 40em;
+}
