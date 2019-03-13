@@ -104,7 +104,7 @@ class ProductAdmin(DashboardAdmin, ThumbnailMixin):
     menu_icon = 'cubes'
     dashboard_url = 'products'
     list_display = (
-        'id', 'admin_thumb', 'title', 'product_class', 'in_stock',
+        'id', 'admin_thumb', 'title', 'product_class', 'inventory',
         'price', 'date_updated', 'is_enabled')
     list_filter = ('stockrecords__partner', 'product_class', 'is_enabled',
                    'date_updated', 'date_created')
@@ -147,20 +147,37 @@ class ProductAdmin(DashboardAdmin, ThumbnailMixin):
     # =========================================================================
     # Display fields
     # =========================================================================
-    def in_stock(self, obj):
+    def inventory(self, product):
         """ Get the in stock status
 
         """
-        stockrecord = obj.stockrecords.all().first()
-        in_stock = stockrecord is not None
-        icon = 'admin/img/icon-{}.svg'.format('yes' if in_stock else 'no')
-        return format_html('<img src="{}" alt="{}">', static(icon), in_stock)
+        stockrecord = product.stockrecords.all().first()
+        num_in_stock = _('Not stocked')
+        num_allocated = ''
+        num_available = ''
+        icon = 'no'
+        if stockrecord is not None:
+            if stockrecord.num_in_stock:
+                in_stock = True
+                num_in_stock = _(f'{stockrecord.num_in_stock} in stock')
+                icon = 'yes'
+            else:
+                num_in_stock = _('Out of stock')
+                icon = 'alert'
+            num_allocated = _(f'{stockrecord.num_allocated} allocated')
+            num_available = _(f'{stockrecord.net_stock_level} available')
+            if stockrecord.is_below_threshold:
+                icon = 'alert'
+        icon = f'admin/img/icon-{icon}.svg'
+        return format_html(
+            '<ul><li><img src="{}"/> {}</li><li>{}</li><li>{}</li></ul>',
+            static(icon), num_in_stock, num_allocated, num_available)
 
-    def price(self, obj):
+    def price(self, product):
         """ Get the price of the first stock record (if it  exists)
 
         """
-        stockrecord = obj.stockrecords.all().first()
+        stockrecord = product.stockrecords.all().first()
         if not stockrecord:
             return
         return currency(stockrecord.price_excl_tax, stockrecord.price_currency)

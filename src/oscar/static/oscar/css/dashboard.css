@@ -3,3 +3,10 @@
     padding-left: 0;
     padding-right: 0;
 }
+.field-inventory ul {
+    margin: 0;
+}
+
+.field-inventory li {
+    white-space: nowrap;
+}
