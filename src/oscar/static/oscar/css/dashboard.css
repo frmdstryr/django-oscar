@@ -3,6 +3,21 @@
     padding-left: 0;
     padding-right: 0;
 }
+
+
+td.modal-editor {
+    position: relative;
+}
+td.modal-editor::after {
+    font-family: wagtail;
+    position: absolute;
+    content: "d";
+    top: 1em;
+    right: 1em;
+    font-size: 1em;
+    color: #007d7e;
+}
+
 .field-inventory ul {
     margin: 0;
 }

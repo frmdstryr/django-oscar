@@ -5,7 +5,7 @@
 <div class="tab-content">
     {% block content %}
     <section class="active nice-padding">
-        <form class="modal-form" action="{{ request.path }}" method="POST" enctype="multipart/form-data">
+        <form class="modal-form" action="{{ request.get_full_path }}" method="POST" enctype="multipart/form-data">
             {% csrf_token %}
             <ul class="fields">
                 {% for field in form %}

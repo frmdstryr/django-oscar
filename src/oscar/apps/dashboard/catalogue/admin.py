@@ -107,7 +107,8 @@ class ProductAdmin(DashboardAdmin, ThumbnailMixin):
         'id', 'admin_thumb', 'title', 'product_class', 'inventory',
         'price', 'date_updated', 'is_enabled')
     list_filter = ('stockrecords__partner', 'product_class', 'is_enabled',
-                   'date_updated', 'date_created')
+                   'date_updated', 'date_created',
+                   'stockrecords__num_in_stock')
     search_fields = ('title', 'upc')
 
     # Enable the inspect view and redirect to the frontent page
@@ -126,7 +127,7 @@ class ProductAdmin(DashboardAdmin, ThumbnailMixin):
     # Use wagtails thumbnail mixin
     thumb_col_header_text = _('Product Image')
     thumb_image_field_name = 'thumbnail_image'
-
+    inline_editable = ['title', 'is_enabled']
     bulk_actions = ['set_disabled', 'set_enabled']
 
     # =========================================================================

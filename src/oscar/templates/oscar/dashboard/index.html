@@ -1,5 +1,5 @@
 {% extends "modeladmin/index.html" %}
-{% load i18n modeladmin_tags %}
+{% load i18n modeladmin_tags static %}
 
 {% block css %}
     {{ block.super }}
@@ -10,6 +10,8 @@
 
 {% block extra_js %}
     {{ block.super }}
+    <script src="{% static "wagtailadmin/js/modal-workflow.js" %}"></script>
+    <script src="{% static "oscar/js/oscar/modal-editor.js" %}"></script>
     {% if form %}
         {{ form.media.js }}
     {% endif %}

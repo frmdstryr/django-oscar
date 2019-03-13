@@ -1,12 +1,6 @@
 {% extends "modeladmin/inspect.html" %}
 {% load i18n modeladmin_tags currency_filters static %}
 
-{% block extra_js %}
-    {{ block.super }}
-    <script src="{% static "wagtailadmin/js/modal-workflow.js" %}"></script>
-    <script src="{% static "oscar/js/oscar/modal-editor.js" %}"></script>
-{% endblock %}
-
 {% block fields_output %}
 {% with instance as order %}
 

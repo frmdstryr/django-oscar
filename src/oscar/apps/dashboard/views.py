@@ -1,11 +1,13 @@
 from django import forms
 from django.db import transaction
+from django.http import Http404
 from django.shortcuts import redirect
 from django.utils.html import format_html
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.edit import FormView
 
 from wagtail.admin import messages
+from wagtail.admin.modal_workflow import render_modal_workflow
 from wagtail.contrib.modeladmin.views import (
     IndexView as BaseIndexView,
     InspectView,
@@ -19,13 +21,19 @@ class IndexView(BaseIndexView, FormView):
 
     """
     bulk_actions = []
+    inline_editable = []
 
     # Don't use action as lookup params
     IGNORED_PARAMS = BaseIndexView.IGNORED_PARAMS + ('action', 'selection')
 
     def __init__(self, model_admin):
         super().__init__(model_admin)
+
+        # Support BulkActions
         self.bulk_actions = model_admin.get_bulk_actions()
+
+        # Support InlineEditable
+        self.inline_editable = model_admin.get_inline_editable()
 
     def get_success_url(self):
         return self.index_url

@@ -10,7 +10,7 @@ from wagtail.contrib.modeladmin.helpers import (
 )
 from wagtail.contrib.modeladmin.options import ModelAdmin, ModelAdminGroup
 
-from .mixins import BulkActionsMixin
+from .mixins import BulkActionsMixin, InlineEditableMixin
 
 
 class DashboardURLHelper(AdminURLHelper):
@@ -88,7 +88,7 @@ class DashboardPermissionHelper(PermissionHelper):
         return super().user_can_delete_obj(user, obj)
 
 
-class DashboardAdmin(ModelAdmin, BulkActionsMixin):
+class DashboardAdmin(ModelAdmin, BulkActionsMixin, InlineEditableMixin):
     """ To add a new view create a method <action>_view and add it in
     the dashboard_views or instance_views list.
 
@@ -108,7 +108,7 @@ class DashboardAdmin(ModelAdmin, BulkActionsMixin):
     class_views = ['index', 'create']
 
     #: List of view types that require a url which accepts an instance_pk
-    instance_views = ['edit', 'delete', 'inspect']
+    instance_views = ['edit', 'delete', 'inspect', 'inline']
     inspect_view_class = get_class('dashboard.views', 'DetailView')
     index_view_class = get_class('dashboard.views', 'IndexView')
     create_view_class = get_class('dashboard.views', 'CreateView')
@@ -224,6 +224,30 @@ class DashboardAdmin(ModelAdmin, BulkActionsMixin):
             # Add url to the dashboard
             urls.append(url(pattern, view, name=view_name))
         return tuple(urls)
+
+    def get_extra_class_names_for_field_col(self, result, field_name):
+        """ Add a modal-edit class if this is in the editable list
+
+        See wagtail's modeladmin_tags
+
+        """
+        classes = super().get_extra_class_names_for_field_col(
+            result, field_name)
+        if field_name in self.inline_editable_fields:
+            classes.append('modal-editor')
+        return classes
+
+    def get_extra_attrs_for_field_col(self, result, field_name):
+        """ Add a data-url class if this is in the editable list
+
+        See wagtail's modeladmin_tags
+
+        """
+        attrs = super().get_extra_attrs_for_field_col(result, field_name)
+        if field_name in self.inline_editable_fields:
+            url = self.get_action_url('inline', result.pk)
+            attrs['data-url'] = f'{url}?fields={field_name}'
+        return attrs
 
 
 class DashboardAdminGroup(ModelAdminGroup):

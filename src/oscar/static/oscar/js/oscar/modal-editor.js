@@ -6,7 +6,11 @@
 $(document).ready(function() {
     $(document).on('click', '.modal-editor', function(e) {
         let url = $(this).data('url');
+        let fields = $(this).data('fields');
         if (!url) {return false;}
+        if (fields) {
+            url = "?"+$.param(fields);
+        }
         ModalWorkflow({
             url: url,
             responses: {},
