@@ -24,7 +24,7 @@ Line = get_model('order', 'Line')
 User = get_user_model()
 UserSearch = get_model('analytics', 'UserSearch')
 
-CustomerAdmin = get_class('dashboard.orders.admin', 'CustomerAdmin')
+CustomerAdmin = get_class('dashboard.customers.admin', 'CustomerAdmin')
 OrderAdmin = get_class('dashboard.orders.admin', 'OrderAdmin')
 ProductAdmin = get_class('dashboard.catalogue.admin', 'ProductAdmin')
 
@@ -72,7 +72,7 @@ class DashboardList(DashboardPanel):
 
 class DashboardSummaryItem(SummaryItem):
     model_admin = None
-    template = 'oscar/dashboard/partials/summary_item.html'
+    template = 'oscar/dashboard/partials/dashboard_summary_item.html'
 
     def get_queryset(self):
         return self.model_admin.get_queryset(self.request)
