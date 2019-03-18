@@ -2,10 +2,12 @@ from django.utils.functional import cached_property
 
 from wagtail.images.blocks import ImageChooserBlock
 from wagtail.embeds.blocks import EmbedBlock
+from wagtail.contrib.table_block.blocks import TableBlock
 from wagtail.core.blocks import (
     CharBlock, ChoiceBlock, RichTextBlock, StreamBlock, StructBlock, TextBlock,
     ListBlock, ChooserBlock
 )
+
 
 from oscar.core.loading import get_model
 from oscar.vendor.modelchooser.blocks import ModelChooserBlock

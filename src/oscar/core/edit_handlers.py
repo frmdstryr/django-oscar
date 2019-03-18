@@ -16,6 +16,7 @@ from django.utils.translation import gettext_lazy as _
 from wagtail.admin import compare
 from wagtail.admin.edit_handlers import *
 from wagtail.core.utils import camelcase_to_underscore
+from wagtail.documents.edit_handlers import DocumentChooserPanel
 from wagtail.images.edit_handlers import ImageChooserPanel
 
 
