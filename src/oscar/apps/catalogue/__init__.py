@@ -7,8 +7,5 @@ class CatalogueConfig(AppConfig):
     name = 'oscar.apps.catalogue'
     verbose_name = _('Catalogue')
 
-    def ready(self):
-        from . import receivers  # noqa
-
 
 default_app_config = 'oscar.apps.catalogue.CatalogueConfig'

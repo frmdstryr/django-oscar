@@ -35,6 +35,7 @@ OSCAR_CORE_APPS = [
     'oscar.apps.shipping',
     'oscar.apps.catalogue',
     'oscar.apps.catalogue.reviews',
+    'oscar.apps.images',
     'oscar.apps.partner',
     'oscar.apps.basket',
     'oscar.apps.payment',
@@ -85,8 +86,6 @@ OSCAR_CORE_APPS = [
     'taggit',
     'haystack',
     'treebeard',
-    'sorl.thumbnail',
-    #'django_tables2',
 ]
 
 

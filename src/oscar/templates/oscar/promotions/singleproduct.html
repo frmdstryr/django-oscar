@@ -1,6 +1,6 @@
 {% load currency_filters %}
 {% load basket_tags %}
-{% load thumbnail %}
+{% load wagtailimages_tags %}
 {% load i18n %}
 {% load static %}
 
@@ -11,10 +11,8 @@
     <div class="row">
         <div class="col-sm-3">
             <div class="image_container">
-                {% with image=product.primary_image %}
-                    {% thumbnail image.original "400x400" upscale=False as thumb %}
-                        <a href="{{ product.get_absolute_url }}"><img class="thumbnail" src="{{ thumb.url }}" alt="{{ product.get_title }}"></a>
-                    {% endthumbnail %}
+                {% with product_image=product.primary_image %}
+                    <a href="{{ product.get_absolute_url }}">{% image product_image.image max-400x400 class="thumbnail" alt=product.get_title %}</a>
                 {% endwith %}
             </div>
         </div>

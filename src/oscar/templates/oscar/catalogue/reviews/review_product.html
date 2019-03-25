@@ -1,13 +1,13 @@
-{% load thumbnail %}
+{% load wagtailimages_tags %}
 {% load static %}
 
 <div class="row">
     <div class="col-sm-2">
         <div class="image_container">
-            {% with image=product.primary_image %}
-                {% thumbnail image.original "x155" upscale=False as thumb %}
-                    <a href="{{ product.get_absolute_url }}"><img src="{{ thumb.url }}" alt="{{ product.get_title }}" class="thumbnail"></a>
-                {% endthumbnail %}
+            {% with product_image=product.primary_image %}
+                <a href="{{ product.get_absolute_url }}">
+                    {% image product_image.image max-155x155 class="thumbnail" alt=product.get_title %}
+                </a>
             {% endwith %}
         </div>
     </div>

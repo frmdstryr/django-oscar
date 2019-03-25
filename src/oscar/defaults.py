@@ -36,6 +36,9 @@ OSCAR_DELETE_IMAGE_FILES = True
 OSCAR_MISSING_IMAGE_URL = 'image_not_found.jpg'
 OSCAR_UPLOAD_ROOT = '/tmp'
 
+# Custom image model to support more complex file names
+WAGTAILIMAGES_IMAGE_MODEL = 'images.OscarImage'
+
 # Address settings
 OSCAR_REQUIRED_ADDRESS_FIELDS = ('first_name', 'last_name', 'line1',
                                  'line4', 'postcode', 'country')

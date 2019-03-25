@@ -1,5 +1,5 @@
 {% load i18n %}
-{% load thumbnail %}
+{% load wagtailimages_tags %}
 {% load currency_filters %}
 {% load purchase_info_tags %}
 {% load widget_tweaks %}
@@ -46,12 +46,10 @@
                         <div class="row">
                             <div class="col-sm-2">
                                 {{ form.id }}
-                                {% with image=product.primary_image %}
-                                    {% thumbnail image.original "100x100" upscale=False as thumb %}
-                                        <a href="{{ product.get_absolute_url }}">
-                                            <img class="thumbnail" src="{{ thumb.url }}" alt="{{ product.get_title }}"/>
-                                        </a>
-                                    {% endthumbnail %}
+                                {% with product_image=product.primary_image %}
+                                    <a href="{{ product.get_absolute_url }}">
+                                        {% image product_image.image fill-100x100 class="thumbnail" alt=product.get_title %}
+                                    </a>
                                 {% endwith %}
                             </div>
                             <div class="col-sm-4">
@@ -190,12 +188,10 @@
                         <div class="row">
                             <div class="col-sm-2">
                                 {{ form.id }}
-                                {% with image=form.instance.product.primary_image %}
-                                    {% thumbnail image.original "100x100" upscale=False as thumb %}
-                                        <a href="{{ form.instance.product.get_absolute_url }}">
-                                            <img class="thumbnail" src="{{ thumb.url }}" alt="{{ form.instance.product.get_title }}">
-                                        </a>
-                                    {% endthumbnail %}
+                                {% with product_image=form.instance.product.primary_image %}
+                                    <a href="{{ form.instance.product.get_absolute_url }}">
+                                        {% image product_image.image fill-100x100 class="thumbnail" alt=form.instance.product.get_title %}
+                                    </a>
                                 {% endwith %}
                             </div>
                             <div class="col-sm-6">

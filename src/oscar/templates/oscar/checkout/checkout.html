@@ -1,6 +1,6 @@
 {% extends "checkout/layout.html" %}
 {% load currency_filters %}
-{% load thumbnail %}
+{% load wagtailimages_tags %}
 {% load i18n %}
 {% load purchase_info_tags %}
 {% load static %}
@@ -117,10 +117,10 @@
                 <div class="row">
                     <div class="col-sm-2">
                         <div class="image_container">
-                            {% with image=line.product.primary_image %}
-                                {% thumbnail image.original "100x100" upscale=False as thumb %}
-                                <a href="{{ form.instance.product.get_absolute_url }}"><img class="thumbnail" src="{{ thumb.url }}" alt="{{ product.get_title }}"></a>
-                                {% endthumbnail %}
+                            {% with product_image=line.product.primary_image %}
+                                <a href="{{ form.instance.product.get_absolute_url }}">
+                                    {% image product_image.image max-100x100 class="thumbnail" alt=product.get_title %}
+                                </a>
                             {% endwith %}
                         </div>
                     </div>

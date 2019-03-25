@@ -1,4 +1,4 @@
-{% load thumbnail %}
+{% load wagtailimages_tags %}
 {% load i18n %}
 {% load static %}
 
@@ -11,11 +11,9 @@
 
             <div class="thumbnail">
                 <div class="carousel-inner" role="listbox">
-                {% for image in all_images %}
+                {% for product_image in all_images %}
                     <div class="item {% if forloop.first %}active{% endif %}">
-                        {% thumbnail image.original "440x400" upscale=False as thumb %}
-                        <img src="{{ thumb.url }}" alt="{{ product.get_title }}" />
-                        {% endthumbnail %}
+                        {% image product_image.image max-440x400 alt=product.get_title %}
                     </div>
                 {% endfor %}
                 </div>
@@ -34,11 +32,9 @@
             </div>
 
             <ol class="carousel-indicators thumbnail">
-                {% for image in all_images %}
+                {% for product_image in all_images %}
                     <li data-target="#product_gallery" data-slide-to="{{ forloop.counter0 }}" class="{% if forloop.first %}active{% endif %}">
-                        {% thumbnail image.original "65x55" crop="center" as thumb %}
-                        <img src="{{ thumb.url }}" alt="{{ product.get_title }}" />
-                        {% endthumbnail %}
+                        {% image product_image.image max-65x55 alt=product.get_title %}
                     </li>
                 {% endfor %}
             </ol>
@@ -51,10 +47,8 @@
             <div class="thumbnail">
                 <div class="carousel-inner">
                     <div class="item active">
-                    {% with image=product.primary_image %}
-                        {% thumbnail image.original "440x400" upscale=False as thumb %}
-                            <img src="{{ thumb.url }}" alt="{{ product.get_title }}" />
-                        {% endthumbnail %}
+                    {% with product_image=product.primary_image %}
+                        {% image product_image.image max-440x400 alt=product.get_title %}
                     {% endwith %}
                     </div>
                 </div>

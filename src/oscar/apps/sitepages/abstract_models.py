@@ -1,26 +1,33 @@
 from django.db import models
 
 from oscar.core.blocks import (
-    ImageBlock, HeadingBlock, BlockQuote, TableBlock,
+    ImageBlock, HeadingBlock, BlockQuote, TableBlock, ListBlock, CharBlock,
     ProductChooserBlock, ProductListBlock
 )
 
-from wagtail.core.blocks import RichTextBlock
+from wagtail.admin.edit_handlers import FieldPanel, StreamFieldPanel
+from wagtail.core.blocks import RichTextBlock, RawHTMLBlock, PageChooserBlock
 from wagtail.core.models import Page
 from wagtail.core.fields import StreamField
-from wagtail.admin.edit_handlers import FieldPanel, StreamFieldPanel
+from wagtail.documents.blocks import DocumentChooserBlock
 from wagtail.images.blocks import ImageChooserBlock
 
 
+DEFAULT_BLOCKS = [
+    ('heading', HeadingBlock()),
+    ('paragraph', RichTextBlock()),
+    ('image', ImageBlock()),
+    ('table', TableBlock()),
+    ('list', ListBlock(CharBlock(label="Item"))),
+    ('pages', ListBlock(PageChooserBlock(required=False))),
+    ('documents', ListBlock(DocumentChooserBlock(required=False))),
+    ('products', ProductListBlock()),
+    ('html', RawHTMLBlock()),
+]
+
+
 class AbstractArticlePage(Page):
-    body = StreamField([
-        ('heading', HeadingBlock()),
-        ('paragraph', RichTextBlock()),
-        ('image', ImageBlock()),
-        ('table', TableBlock()),
-        ('product', ProductChooserBlock()),
-        ('product_list', ProductListBlock()),
-    ])
+    body = StreamField(DEFAULT_BLOCKS)
 
     content_panels = Page.content_panels + [
         StreamFieldPanel('body'),
@@ -31,14 +38,7 @@ class AbstractArticlePage(Page):
 
 
 class AbstractArticleLeftBarPage(Page):
-    body = StreamField([
-        ('heading', HeadingBlock()),
-        ('paragraph', RichTextBlock()),
-        ('image', ImageBlock()),
-        ('table', TableBlock()),
-        ('product', ProductChooserBlock()),
-        ('product_list', ProductListBlock()),
-    ])
+    body = StreamField(DEFAULT_BLOCKS)
 
     content_panels = Page.content_panels + [
         StreamFieldPanel('body'),
@@ -49,14 +49,7 @@ class AbstractArticleLeftBarPage(Page):
 
 
 class AbstractArticleLeftBarNoNavPage(Page):
-    body = StreamField([
-        ('heading', HeadingBlock()),
-        ('paragraph', RichTextBlock()),
-        ('image', ImageBlock()),
-        ('table', TableBlock()),
-        ('product', ProductChooserBlock()),
-        ('product_list', ProductListBlock()),
-    ])
+    body = StreamField(DEFAULT_BLOCKS)
 
     content_panels = Page.content_panels + [
         StreamFieldPanel('body'),
@@ -67,14 +60,7 @@ class AbstractArticleLeftBarNoNavPage(Page):
 
 
 class AbstractArticleNoNavPage(Page):
-    body = StreamField([
-        ('heading', HeadingBlock()),
-        ('paragraph', RichTextBlock()),
-        ('image', ImageBlock()),
-        ('table', TableBlock()),
-        ('product', ProductChooserBlock()),
-        ('product_list', ProductListBlock()),
-    ])
+    body = StreamField(DEFAULT_BLOCKS)
 
     content_panels = Page.content_panels + [
         StreamFieldPanel('body'),
@@ -85,14 +71,7 @@ class AbstractArticleNoNavPage(Page):
 
 
 class AbstractArticleLeftRightBarNoNavPage(Page):
-    body = StreamField([
-        ('heading', HeadingBlock()),
-        ('paragraph', RichTextBlock()),
-        ('image', ImageBlock()),
-        ('table', TableBlock()),
-        ('product', ProductChooserBlock()),
-        ('product_list', ProductListBlock()),
-    ])
+    body = StreamField(DEFAULT_BLOCKS)
 
     content_panels = Page.content_panels + [
         StreamFieldPanel('body'),
@@ -103,14 +82,7 @@ class AbstractArticleLeftRightBarNoNavPage(Page):
 
 
 class AbstractArticleLeftRightBarPage(Page):
-    body = StreamField([
-        ('heading', HeadingBlock()),
-        ('paragraph', RichTextBlock()),
-        ('image', ImageBlock()),
-        ('table', TableBlock()),
-        ('product', ProductChooserBlock()),
-        ('product_list', ProductListBlock()),
-    ])
+    body = StreamField(DEFAULT_BLOCKS)
 
     content_panels = Page.content_panels + [
         StreamFieldPanel('body'),
@@ -121,14 +93,7 @@ class AbstractArticleLeftRightBarPage(Page):
 
 
 class AbstractBlankShopPage(Page):
-    body = StreamField([
-        ('heading', HeadingBlock()),
-        ('paragraph', RichTextBlock()),
-        ('image', ImageBlock()),
-        ('table', TableBlock()),
-        ('product', ProductChooserBlock()),
-        ('product_list', ProductListBlock()),
-    ])
+    body = StreamField(DEFAULT_BLOCKS)
 
     content_panels = Page.content_panels + [
         StreamFieldPanel('body'),

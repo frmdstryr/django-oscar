@@ -129,7 +129,7 @@ class AbstractCategory(Page):
     COMPARISON_FIELDS = ('pk', 'path', 'depth')
     description = RichTextField(_('Description'), blank=True)
     image = models.ForeignKey(
-        'wagtailimages.Image',
+        'images.OscarImage',
         blank=True, null=True,
         on_delete=models.SET_NULL,
         related_name='categories',
@@ -1596,7 +1596,7 @@ class AbstractProductImage(Orderable):
         related_name='images',
         verbose_name=_("Product"))
     image = models.ForeignKey(
-        'wagtailimages.Image',
+        'images.OscarImage',
         on_delete=models.CASCADE,
         related_name='products',
         verbose_name=_("Image"))

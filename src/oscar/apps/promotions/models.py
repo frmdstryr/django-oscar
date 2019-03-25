@@ -208,7 +208,7 @@ class Image(AbstractPromotion):
     link_url = ExtendedURLField(
         _('Link URL'), blank=True,
         help_text=_('This is where this promotion links to'))
-    image = models.ForeignKey('wagtailimages.Image',
+    image = models.ForeignKey('images.OscarImage',
                               on_delete=models.PROTECT,
                               max_length=255)
     date_created = models.DateTimeField(auto_now_add=True)
