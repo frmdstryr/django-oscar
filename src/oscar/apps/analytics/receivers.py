@@ -78,10 +78,14 @@ def _record_user_order(user, order):
 def receive_product_view(sender, product, user, **kwargs):
     if kwargs.get('raw', False):
         return
-    _update_counter(ProductRecord, 'num_views', {'product': product})
-    if user and user.is_authenticated:
-        _update_counter(UserRecord, 'num_product_views', {'user': user})
-        UserProductView.objects.create(product=product, user=user)
+    try:
+        _update_counter(ProductRecord, 'num_views', {'product': product})
+        if user and user.is_authenticated:
+            _update_counter(UserRecord, 'num_product_views', {'user': user})
+            UserProductView.objects.create(product=product, user=user)
+    except IntegrityError:      # pragma: no cover
+        logger.error(
+            "IntegrityError in analytics when recording a product view.")
 
 
 @receiver(user_search)

@@ -412,6 +412,7 @@ class InlineFormPanel(BaseChooserPanel):
 
     """
     # Hide the label
+    object_type_name = 'object'
     object_template = 'oscar/dashboard/edit_handlers/field_no_label.html'
 
     def __init__(self, field_name, panels=None, exclude=None, initial=None,

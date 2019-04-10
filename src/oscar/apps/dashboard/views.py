@@ -68,10 +68,11 @@ class DetailView(InspectView):
     """ Changes "Inspect" to "View"
 
     """
-    page_title = _('Viewing')
+    def get_page_title(self):
+        return _('%s') % (self.verbose_name,)
 
     def get_meta_title(self):
-        return _('Viewing %s') % self.verbose_name
+        return _('%s %s') % (self.verbose_name, self.instance)
 
 
 class BoundFormMixin:
