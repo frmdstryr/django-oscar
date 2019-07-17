@@ -84,7 +84,7 @@ class OrderAdmin(DashboardAdmin):
         ).prefetch_related('lines', 'status_changes')
         if request.user.is_staff:
             return queryset
-        partners = Partner._default_manager.filter(users=user)
+        partners = Partner._default_manager.filter(users=request.user)
         return queryset.filter(lines__partner__in=partners).distinct()
 
     # =========================================================================
