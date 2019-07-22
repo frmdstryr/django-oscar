@@ -51,9 +51,13 @@ class CustomerAdmin(DashboardAdmin):
         order = customer.last_order
         if order:
             OrderAdmin = get_class('dashboard.orders.admin', 'OrderAdmin')
-            url = OrderAdmin.instance().get_action_url(
-                'view', quote(order.pk))
-            return format_html('<a href="{}">{}</a>', url, order)
+            order_admin = OrderAdmin.instance()
+            last_url = order_admin.get_action_url('view', quote(order.pk))
+            all_url = order_admin.get_action_url('index')
+            return format_html('<a href="{}">{}</a>'
+                               '<p><a href="{}?q={}">Show all</a></p>',
+                               last_url, order,
+                               all_url, customer.email)
 
     # =========================================================================
     # Search results
