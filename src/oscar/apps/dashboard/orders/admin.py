@@ -29,7 +29,10 @@ class OrderAdmin(DashboardAdmin):
     list_display = ('number', 'status', 'num_items', 'order_total',
                     'paid_in_full', 'bill_to', 'ship_to', 'date_placed')
     list_filter = ('date_placed', 'status')
-    search_fields = ('number', 'user__email')
+    search_fields = (
+        'number',
+        'user__email', 'user__first_name', 'user__last_name',
+        'shipping_address__first_name', 'shipping_address__last_name')
 
     inspect_view_enabled = True
     inspect_view_class = get_class(
