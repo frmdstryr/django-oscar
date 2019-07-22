@@ -1,9 +1,7 @@
 {% load i18n %}
 {% load wagtailadmin_tags  %}
 <tr class="line-item {% cycle 'odd' 'even' %}" data-inline-panel-child id="inline_child_{{ child.form.prefix }}">
-    {% if can_edit %}
-        <td><input type="checkbox" name="line" value="{{ child.instance.id }}" /></td>
-    {% endif %}
+    <td>{% if can_edit %}<input type="checkbox" name="line" value="{{ child.instance.id }}" />{% endif %}</td>
     {% for field in child.children %}
         <td>{{field.render_as_object}}</td>
     {% endfor %}

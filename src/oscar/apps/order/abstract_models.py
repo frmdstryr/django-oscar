@@ -33,7 +33,7 @@ from . import exceptions
 from modelcluster.fields import ParentalKey
 from modelcluster.models import ClusterableModel
 
-from .edit_handlers import OrderAddressPanel, OrderLinesPanel
+from .edit_handlers import OrderAddressPanel, OrderLinesPanel, OrderLineChooserPanel
 
 logger = logging.getLogger('oscar.order')
 
@@ -370,7 +370,7 @@ class AbstractOrder(ClusterableModel):
             #ReadOnlyPanel('line_total', formatter=currency_formatter),
         #],
         panels=[
-            ModelChooserPanel('stockrecord', search_fields=['product__title']),
+            OrderLineChooserPanel('stockrecord', search_fields=['product__title']),
             FieldPanel('quantity')
         ],
         headings=[_('Product'), _('Qty')],

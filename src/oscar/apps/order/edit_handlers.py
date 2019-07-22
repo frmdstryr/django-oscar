@@ -1,7 +1,9 @@
+from django.utils.translation import gettext_lazy as _
 from oscar.core.edit_handlers import (
-    HelpPanel, AddOnlyInlineTablePanel, AddressChooserPanel
+    HelpPanel, AddOnlyInlineTablePanel, AddressChooserPanel, ModelChooserPanel
 )
 from oscar.core.loading import get_class
+from oscar.vendor.modelchooser.widgets import AdminModelChooser
 
 
 class OrderAddressPanel(AddressChooserPanel):
@@ -14,8 +16,13 @@ class OrderAddressPanel(AddressChooserPanel):
         return super().get_queryset(request)
 
 
+class OrderLineChooserPanel(ModelChooserPanel):
+    auto_register = True
+    #choice_template = "oscar/dashboard/orders/order_line_choice.html"
+
+
 class OrderLinesPanel(AddOnlyInlineTablePanel):
-    pass
+   can_edit_existing = False
 
 
 class OrderInfoPanel(HelpPanel):

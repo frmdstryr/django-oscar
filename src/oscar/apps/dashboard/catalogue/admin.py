@@ -72,8 +72,8 @@ class ProductAttributeAdmin(DashboardAdmin):
     menu_label = _('Attributes')
     menu_icon = 'tag'
     dashboard_url = 'product-attributes'
-    list_display = ('name', 'type', 'required', 'display')
-    list_filter = ('type', 'required', 'display')
+    list_display = ('name', 'type', 'required', 'display', 'product_class')
+    list_filter = ('type', 'required', 'display', 'product_class')
     search_fields = ('name', 'code')
 
 
