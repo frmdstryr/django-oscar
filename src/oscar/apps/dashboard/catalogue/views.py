@@ -5,7 +5,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
 from oscar.core.loading import get_model
-from wagtail.contrib.modeladmin.views import CreateView, EditView
+from oscar.apps.dashboard.views import CreateView, EditView
 
 
 Product = get_model('catalogue', 'Product')

@@ -18,7 +18,7 @@ sys.path.append(os.path.join(PROJECT_DIR, 'src'))
 from oscar import get_version  # noqa isort:skip
 
 install_requires = [
-    'django>=2.2a1',
+    'django>=2.2',
     # PIL is required for image fields, Pillow is the "friendly" PIL fork
     'pillow>=4.0',
     # We use the ModelFormSetView from django-extra-views for the basket page
@@ -46,6 +46,8 @@ install_requires = [
     'wagtail>=2.0',
     #'wagtailmodelchooser>=0.3.0', # Now added under vendor since it's hacked up so much
     'wagtail-autocomplete>=0.1.1',
+
+    'django-polymorphic>=2.1.2',
 ]
 
 docs_requires = [

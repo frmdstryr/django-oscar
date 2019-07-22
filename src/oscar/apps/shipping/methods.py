@@ -30,13 +30,19 @@ class Base(object):
     #: Whether the charge includes a discount
     is_discounted = False
 
-    def calculate(self, basket):
+    def is_applicable(self, basket, shipping_address=None, **kwargs):
+        """
+        Return whether this shipping method is applicable
+        """
+        return True
+
+    def calculate(self, basket, shipping_address=None, **kwargs):
         """
         Return the shipping charge for the given basket
         """
         raise NotImplementedError
 
-    def discount(self, basket):
+    def discount(self, basket, shipping_address=None, **kwargs):
         """
         Return the discount on the standard shipping charge
         """
@@ -53,7 +59,7 @@ class Free(Base):
     code = 'free-shipping'
     name = _('Free shipping')
 
-    def calculate(self, basket):
+    def calculate(self, basket, shipping_address=None, **kwargs):
         # If the charge is free then tax must be free (musn't it?) and so we
         # immediately set the tax to zero
         return prices.Price(
@@ -89,7 +95,7 @@ class FixedPrice(Base):
         if charge_incl_tax is not None:
             self.charge_incl_tax = charge_incl_tax
 
-    def calculate(self, basket):
+    def calculate(self, basket, shipping_address=None, **kwargs):
         return prices.Price(
             currency=basket.currency,
             excl_tax=self.charge_excl_tax,
@@ -125,8 +131,8 @@ class OfferDiscount(Base):
     def description(self):
         return self.method.description
 
-    def calculate_excl_discount(self, basket):
-        return self.method.calculate(basket)
+    def calculate_excl_discount(self, basket, shipping_address=None, **kwargs):
+        return self.method.calculate(basket, shipping_address, **kwargs)
 
 
 class TaxExclusiveOfferDiscount(OfferDiscount):
@@ -134,16 +140,16 @@ class TaxExclusiveOfferDiscount(OfferDiscount):
     Wrapper class which extends OfferDiscount to be exclusive of tax.
     """
 
-    def calculate(self, basket):
-        base_charge = self.method.calculate(basket)
+    def calculate(self, basket, shipping_address=None, **kwargs):
+        base_charge = self.method.calculate(basket, shipping_address, **kwargs)
         discount = self.offer.shipping_discount(base_charge.excl_tax)
         excl_tax = base_charge.excl_tax - discount
         return prices.Price(
             currency=base_charge.currency,
             excl_tax=excl_tax)
 
-    def discount(self, basket):
-        base_charge = self.method.calculate(basket)
+    def discount(self, basket, shipping_address=None, **kwargs):
+        base_charge = self.method.calculate(basket, shipping_address, **kwargs)
         return self.offer.shipping_discount(base_charge.excl_tax)
 
 
@@ -152,7 +158,7 @@ class TaxInclusiveOfferDiscount(OfferDiscount):
     Wrapper class which extends OfferDiscount to be inclusive of tax.
     """
 
-    def calculate(self, basket):
+    def calculate(self, basket, shipping_address=None, **kwargs):
         base_charge = self.method.calculate(basket)
         discount = self.offer.shipping_discount(base_charge.incl_tax)
         incl_tax = base_charge.incl_tax - discount
@@ -173,6 +179,6 @@ class TaxInclusiveOfferDiscount(OfferDiscount):
             incl_tax / base_charge.incl_tax)
         return excl_tax.quantize(D('0.01'))
 
-    def discount(self, basket):
-        base_charge = self.method.calculate(basket)
+    def discount(self, basket, shipping_address=None, **kwargs):
+        base_charge = self.method.calculate(basket, shipping_address, **kwargs)
         return self.offer.shipping_discount(base_charge.incl_tax)

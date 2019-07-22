@@ -111,7 +111,7 @@ class ProductAdmin(DashboardAdmin, ThumbnailMixin):
                    'stockrecords__num_in_stock')
     search_fields = ('title', 'upc')
 
-    # Enable the inspect view and redirect to the frontent page
+    # Enable the inspect view and redirect to the frontend page
     inspect_view_enabled = True
     list_display_add_buttons = 'title'
 
@@ -120,7 +120,7 @@ class ProductAdmin(DashboardAdmin, ThumbnailMixin):
     # is used to select which one.
     index_template_name = 'oscar/dashboard/catalogue/index.html'
     add_button_class = get_class(
-        'dashboard.catalogue.widgets', 'ProductAddDropdownButton')
+        'dashboard.catalogue.widgets', 'AddProductDropdownButton')
     create_view_class = get_class(
         'dashboard.catalogue.views', 'ProductCreateView')
 

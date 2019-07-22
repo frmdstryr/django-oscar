@@ -83,6 +83,7 @@ OSCAR_CORE_APPS = [
     'wagtailmenus',
     'wagtailautocomplete',
     'modelcluster',
+    'polymorphic',
     'taggit',
     'haystack',
     'treebeard',

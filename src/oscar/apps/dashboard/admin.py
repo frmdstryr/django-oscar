@@ -31,6 +31,7 @@ class FulfillmentGroup(DashboardAdminGroup):
         return (
             get_class('dashboard.orders.admin', 'OrderAdmin'),
             get_class('dashboard.partners.admin', 'PartnerAdmin'),
+            get_class('dashboard.shipments.admin', 'ShippingMethodsAdmin'),
             get_class('dashboard.partners.admin', 'StockAlertAdmin'),
         )
 
@@ -141,12 +142,22 @@ class DashboardSite:
         )
 
     def construct_main_menu(self, request, menu_items):
-        # Remove images and documents
-        return #
-        #excluded = ('documents',)
-        menu_items[:] = [
-            item for item in menu_items if item.name not in excluded
-        ]
+        # Remove user settings menu
+        if not request.user.is_superuser:
+            excluded = ('users', 'groups')
+            for item in menu_items:
+                if item.name in excluded:
+                    menu_items.remove(item)
+                    continue
+
+                # Check nested menus
+                if item.menu:
+                    sub_menu_items = item.menu._registered_menu_items
+                    for sub_item in sub_menu_items:
+                        if sub_item.name in excluded:
+                            sub_menu_items.remove(sub_item)
+                    if not item.is_shown(request):
+                        menu_items.remove(item)
 
     def construct_panels(self, request, panels):
         for Panel in self.panels:

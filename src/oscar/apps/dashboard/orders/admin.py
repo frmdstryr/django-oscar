@@ -25,7 +25,6 @@ class OrderAdmin(DashboardAdmin):
     menu_label = _('Orders')
     menu_icon = 'list-alt'
     dashboard_url = 'orders'
-    instance_views = []
     restricted_actions = ['edit', 'delete']
     list_display = ('number', 'status', 'num_items', 'order_total',
                     'paid_in_full', 'bill_to', 'ship_to', 'date_placed')

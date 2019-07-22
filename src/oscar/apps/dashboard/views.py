@@ -81,7 +81,7 @@ class BoundFormMixin:
     """
 
     def get_bound_form(self):
-        edit_handler = self.get_edit_handler().bind_to_instance(
+        edit_handler = self.get_edit_handler().bind_to(
             instance=self.get_instance(),
             form=self.get_form(),
             request=self.request)

@@ -6,27 +6,44 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from oscar.core import loading, prices
+from oscar.core.edit_handlers import (
+    FieldPanel, InlinePanel, MultiFieldPanel, FieldRowPanel,
+    TabbedInterface, ObjectList, RowPanel
+)
+
 from oscar.models.fields import AutoSlugField, ParentalKey
 from modelcluster.models import ClusterableModel
+from polymorphic.models import PolymorphicModel
 
 Scale = loading.get_class('shipping.scales', 'Scale')
 
 
-class AbstractBase(ClusterableModel):
+class AbstractMethod(PolymorphicModel):
     """
     Implements the interface declared by shipping.base.Base
     """
     code = AutoSlugField(_("Slug"), max_length=128, unique=True,
                          populate_from='name', db_index=True)
-    name = models.CharField(_("Name"), max_length=128, unique=True, db_index=True)
+    name = models.CharField(_("Name"), max_length=128, unique=True,
+                            db_index=True)
     description = models.TextField(_("Description"), blank=True)
 
     # We allow shipping methods to be linked to a specific set of countries
     countries = models.ManyToManyField('address.Country',
                                        blank=True, verbose_name=_("Countries"))
 
+    # Allow selection from the dashboard
+    is_enabled = models.BooleanField(_('Is Enabled'), default=True)
+
     # We need this to mimic the interface of the Base shipping method
     is_discounted = False
+
+    shipping_method_panels = [
+        FieldPanel('name'),
+        FieldPanel('is_enabled'),
+        FieldPanel('description', classname='full'),
+        FieldPanel('contries'),
+    ]
 
     class Meta:
         abstract = True
@@ -38,15 +55,10 @@ class AbstractBase(ClusterableModel):
     def __str__(self):
         return self.name
 
-    def discount(self, basket):
-        """
-        Return the discount on the standard shipping charge
-        """
-        # This method is identical to the Base.discount().
-        return D('0.00')
+    # calculate, is_applicable, and discount must be overwritten in subclasses
 
 
-class AbstractOrderAndItemCharges(AbstractBase):
+class AbstractOrderAndItemCharges(AbstractMethod):
     """
     Standard shipping method
 
@@ -70,13 +82,16 @@ class AbstractOrderAndItemCharges(AbstractBase):
         _("Free Shipping"), decimal_places=2, max_digits=12, blank=True,
         null=True)
 
-    class Meta(AbstractBase.Meta):
+    class Meta(AbstractMethod.Meta):
         abstract = True
         app_label = 'shipping'
         verbose_name = _("Order and Item Charge")
         verbose_name_plural = _("Order and Item Charges")
 
-    def calculate(self, basket):
+    def is_applicable(self, basket, shipping_address=None, **kwargs):
+        return True
+
+    def calculate(self, basket, shipping_address=None, **kwargs):
         if (self.free_shipping_threshold is not None
                 and basket.total_incl_tax >= self.free_shipping_threshold):
             return prices.Price(
@@ -95,7 +110,7 @@ class AbstractOrderAndItemCharges(AbstractBase):
             incl_tax=charge)
 
 
-class AbstractWeightBased(AbstractBase):
+class AbstractWeightBased(AbstractMethod):
     # The attribute code to use to look up the weight of a product
     weight_attribute = 'weight'
 
@@ -108,13 +123,27 @@ class AbstractWeightBased(AbstractBase):
         help_text=_("Default product weight in kg when no weight attribute "
                     "is defined"))
 
-    class Meta(AbstractBase.Meta):
+    edit_handler = TabbedInterface([
+        ObjectList(
+            AbstractMethod.shipping_method_panels + [
+                FieldPanel('default_weight'),
+            ],
+            heading=_('Details')),
+        ObjectList([
+                InlinePanel('bands'),
+            ], heading=_('Weight Bands'))
+    ])
+
+    class Meta(AbstractMethod.Meta):
         abstract = True
         app_label = 'shipping'
         verbose_name = _("Weight-based Shipping Method")
         verbose_name_plural = _("Weight-based Shipping Methods")
 
-    def calculate(self, basket):
+    def is_applicable(self, basket, shipping_address=None, **kwargs):
+        return True
+
+    def calculate(self, basket, shipping_address=None, **kwargs):
         # Note, when weighing the basket, we don't check whether the item
         # requires shipping or not.  It is assumed that if something has a
         # weight, then it requires shipping.
@@ -125,9 +154,7 @@ class AbstractWeightBased(AbstractBase):
 
         # Zero tax is assumed...
         return prices.Price(
-            currency=basket.currency,
-            excl_tax=charge,
-            incl_tax=charge)
+            currency=basket.currency, excl_tax=charge, incl_tax=charge)
 
     def get_charge(self, weight):
         """
@@ -189,7 +216,7 @@ class AbstractWeightBand(models.Model):
     """
     Represents a weight band which are used by the WeightBasedShipping method.
     """
-    method = ParentalKey(
+    method = models.ForeignKey(
         'shipping.WeightBased',
         on_delete=models.CASCADE,
         related_name='bands',

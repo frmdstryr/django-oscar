@@ -127,4 +127,4 @@ class Application(object):
 
 
 class DashboardApplication(Application):
-    login_url = reverse_lazy('dashboard:login')
+    login_url = reverse_lazy('wagtailadmin_home')

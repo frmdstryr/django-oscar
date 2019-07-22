@@ -54,3 +54,19 @@ class CustomerAdmin(DashboardAdmin):
             url = OrderAdmin.instance().get_action_url(
                 'view', quote(order.pk))
             return format_html('<a href="{}">{}</a>', url, order)
+
+    # =========================================================================
+    # Search results
+    # =========================================================================
+    def get_queryset(self, request):
+        """
+        Returns a queryset of all customers that a user is allowed to access.
+        A staff user may access all orders.
+        To allow access to an order for a non-staff user, at least one order
+        line's partner has to have the user in the partner's list.
+        """
+        queryset = Customer._default_manager.all()
+        if request.user.is_staff:
+            return queryset
+        partners = Partner._default_manager.filter(users=request.user)
+        return queryset.filter(orders__lines__partner__in=partners).distinct()

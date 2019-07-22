@@ -1,5 +1,6 @@
 import re
 from django.core import signing
+from django.core.paginator import Paginator
 from django.apps import apps
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
@@ -8,7 +9,7 @@ from django.shortcuts import render
 from wagtail.admin.edit_handlers import BaseChooserPanel
 from wagtail.admin.modal_workflow import render_modal_workflow
 from wagtail.search.index import Indexed
-from wagtail.utils.pagination import paginate
+
 
 
 from . import registry
@@ -65,7 +66,8 @@ def chooser(request, signed_data):
             if use_distinct:
                 qs = qs.distinct()
 
-    paginator, page = paginate(request, qs, per_page=10)
+    paginator = Paginator(qs, per_page=10)
+    page = paginator.get_page(request.GET.get('p'))
     ajax = 'ajax' in request.GET
     context = {
         'chooser': chooser,

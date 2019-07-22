@@ -42,19 +42,36 @@ class OrderDetailsView(DetailView):
             if not form.has_changed():
                 continue
             if form.is_valid():
-                return self.form_valid(form)
+                return self.form_valid(form, form_name)
             else:
-                return self.form_invalid(form)
+                return self.form_invalid(form, form_name)
         messages.error(self.request, 'No action was given')
         return self.render_to_response(self.get_context_data())
 
-    def form_valid(self, form):
-        instance = form.save()
-        messages.success(self.request, _('Action completed'))
+    def get_success_message(self, form, form_name, instance=None):
+        if isinstance(instance, OrderNote):
+            return _('Note added')
+        return _('Action completed')
+
+    def get_error_message(self, form):
+        return _("The action could not be completed due to errors.")
+
+    def process_form(self, form, form_anme):
+        """ Subclasses should override this to process custom forms """
+        raise NotImplementedError()
+
+    def form_valid(self, form, form_name):
+        if hasattr(form, 'save'):
+            instance = form.save()
+            message = self.get_success_message(form, form_name, instance)
+        else:
+            handler = getattr(
+                self, 'process_%s' % form_name, self.process_form)
+            message = handler(form)
+        messages.success(self.request, message)
         return redirect(self.request.path)
 
-    def form_invalid(self, form):
-        messages.validation_error(
-            self.request,
-            _("The action could not be completed due to errors."), form)
+    def form_invalid(self, form, form_name):
+        message = self.get_error_message(form)
+        messages.validation_error(self.request, message, form)
         return self.render_to_response(self.get_context_data())
