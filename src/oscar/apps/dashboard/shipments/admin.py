@@ -102,7 +102,7 @@ class ShippingMethodsAdmin(DashboardAdmin):
         elif hasattr(self, 'panels'):
             panels = self.panels
             edit_handler = ObjectList(panels)
-        elif hasattr(self.model, 'edit_handler'):
+        elif hasattr(model, 'edit_handler'):
             edit_handler = model.edit_handler
         elif hasattr(model, 'panels'):
             panels = model.panels

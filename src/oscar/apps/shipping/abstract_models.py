@@ -25,15 +25,21 @@ class AbstractMethod(PolymorphicModel):
     code = AutoSlugField(_("Slug"), max_length=128, unique=True,
                          populate_from='name', db_index=True)
     name = models.CharField(_("Name"), max_length=128, unique=True,
-                            db_index=True)
-    description = models.TextField(_("Description"), blank=True)
+                            db_index=True, help_text=_(
+                                "Name displayed on the frontend"))
+    description = models.TextField(_("Description"), blank=True, help_text=_(
+                                "Description displayed on the frontend"))
 
     # We allow shipping methods to be linked to a specific set of countries
-    countries = models.ManyToManyField('address.Country',
-                                       blank=True, verbose_name=_("Countries"))
+    countries = models.ManyToManyField(
+        'address.Country', blank=True, verbose_name=_("Countries"),
+        help_text=_("Countries that this shipping method can be used for."))
 
     # Allow selection from the dashboard
-    is_enabled = models.BooleanField(_('Is Enabled'), default=True)
+    is_enabled = models.BooleanField(
+        _('Is Enabled'), default=True, help_text=_(
+            "If enabled this is shown as an available shipping method when "
+            "applicable."))
 
     # We need this to mimic the interface of the Base shipping method
     is_discounted = False
@@ -42,7 +48,7 @@ class AbstractMethod(PolymorphicModel):
         FieldPanel('name'),
         FieldPanel('is_enabled'),
         FieldPanel('description', classname='full'),
-        FieldPanel('contries'),
+        FieldPanel('countries'),
     ]
 
     class Meta:
@@ -72,15 +78,22 @@ class AbstractOrderAndItemCharges(AbstractMethod):
     """
     price_per_order = models.DecimalField(
         _("Price per order"), decimal_places=2, max_digits=12,
-        default=D('0.00'))
+        default=D('0.00'), help_text=_(
+            "If the amount is below the free shipping threshold "
+            "then shipping is calculated using this as fixed price added "
+            "order."))
     price_per_item = models.DecimalField(
         _("Price per item"), decimal_places=2, max_digits=12,
-        default=D('0.00'))
+        default=D('0.00'), help_text=_(
+            "If the amount is below the free shipping threshold "
+            "then shipping is calculated using the price per order plus "
+            "a this price per quantity of each item."))
 
     # If basket value is above this threshold, then shipping is free
     free_shipping_threshold = models.DecimalField(
         _("Free Shipping"), decimal_places=2, max_digits=12, blank=True,
-        null=True)
+        null=True, help_text=_(
+            "If the amount is above this threshold then shipping is free."))
 
     class Meta(AbstractMethod.Meta):
         abstract = True
@@ -110,7 +123,7 @@ class AbstractOrderAndItemCharges(AbstractMethod):
             incl_tax=charge)
 
 
-class AbstractWeightBased(AbstractMethod):
+class AbstractWeightBased(AbstractMethod, ClusterableModel):
     # The attribute code to use to look up the weight of a product
     weight_attribute = 'weight'
 
@@ -130,7 +143,7 @@ class AbstractWeightBased(AbstractMethod):
             ],
             heading=_('Details')),
         ObjectList([
-                InlinePanel('bands'),
+                InlinePanel('bands', heading=_('Bands')),
             ], heading=_('Weight Bands'))
     ])
 
@@ -216,7 +229,7 @@ class AbstractWeightBand(models.Model):
     """
     Represents a weight band which are used by the WeightBasedShipping method.
     """
-    method = models.ForeignKey(
+    method = ParentalKey(
         'shipping.WeightBased',
         on_delete=models.CASCADE,
         related_name='bands',
@@ -228,7 +241,9 @@ class AbstractWeightBand(models.Model):
                     "limit will be determined by the other weight bands."))
     charge = models.DecimalField(
         _("Charge"), decimal_places=2, max_digits=12,
-        validators=[MinValueValidator(D('0.00'))])
+        validators=[MinValueValidator(D('0.00'))],
+        help_text=_("Enter the amount that will be applied to this weight "
+                    "band."))
 
     @property
     def weight_from(self):
