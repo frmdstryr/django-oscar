@@ -17,71 +17,71 @@ class Migration(migrations.Migration):
         #    model_name='lineattribute',
         #    name='value',
         #),
-        migrations.AddField(
-            model_name='lineattribute',
-            name='entity_content_type',
-            field=models.ForeignKey(blank=True, editable=False, null=True, on_delete=django.db.models.deletion.CASCADE, to='contenttypes.ContentType'),
-        ),
-        migrations.AddField(
-            model_name='lineattribute',
-            name='entity_object_id',
-            field=models.PositiveIntegerField(blank=True, editable=False, null=True),
-        ),
-        migrations.AddField(
-            model_name='lineattribute',
-            name='value_boolean',
-            field=models.NullBooleanField(verbose_name='Boolean'),
-        ),
-        migrations.AddField(
-            model_name='lineattribute',
-            name='value_date',
-            field=models.DateField(blank=True, null=True, verbose_name='Date'),
-        ),
-        migrations.AddField(
-            model_name='lineattribute',
-            name='value_datetime',
-            field=models.DateTimeField(blank=True, null=True, verbose_name='DateTime'),
-        ),
-        migrations.AddField(
-            model_name='lineattribute',
-            name='value_file',
-            field=models.FileField(blank=True, max_length=255, null=True, upload_to='images/products/%Y/%m/'),
-        ),
-        migrations.AddField(
-            model_name='lineattribute',
-            name='value_float',
-            field=models.FloatField(blank=True, null=True, verbose_name='Float'),
-        ),
-        migrations.AddField(
-            model_name='lineattribute',
-            name='value_image',
-            field=models.ImageField(blank=True, max_length=255, null=True, upload_to='images/products/%Y/%m/'),
-        ),
-        migrations.AddField(
-            model_name='lineattribute',
-            name='value_integer',
-            field=models.IntegerField(blank=True, null=True, verbose_name='Integer'),
-        ),
-        migrations.AddField(
-            model_name='lineattribute',
-            name='value_multi_option',
-            field=models.ManyToManyField(blank=True, related_name='multi_valued_line_attribute_values', to='catalogue.AddToCartOption', verbose_name='Value multi option'),
-        ),
-        migrations.AddField(
-            model_name='lineattribute',
-            name='value_option',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='catalogue.AddToCartOption', verbose_name='Value option'),
-        ),
-        migrations.AddField(
-            model_name='lineattribute',
-            name='value_richtext',
-            field=models.TextField(blank=True, null=True, verbose_name='Richtext'),
-        ),
-        migrations.AddField(
-            model_name='lineattribute',
-            name='value_text',
-            field=models.TextField(blank=True, null=True, verbose_name='Text'),
-        ),
+        #migrations.AddField(
+            #model_name='lineattribute',
+            #name='entity_content_type',
+            #field=models.ForeignKey(blank=True, editable=False, null=True, on_delete=django.db.models.deletion.CASCADE, to='contenttypes.ContentType'),
+        #),
+        #migrations.AddField(
+            #model_name='lineattribute',
+            #name='entity_object_id',
+            #field=models.PositiveIntegerField(blank=True, editable=False, null=True),
+        #),
+        #migrations.AddField(
+            #model_name='lineattribute',
+            #name='value_boolean',
+            #field=models.NullBooleanField(verbose_name='Boolean'),
+        #),
+        #migrations.AddField(
+            #model_name='lineattribute',
+            #name='value_date',
+            #field=models.DateField(blank=True, null=True, verbose_name='Date'),
+        #),
+        #migrations.AddField(
+            #model_name='lineattribute',
+            #name='value_datetime',
+            #field=models.DateTimeField(blank=True, null=True, verbose_name='DateTime'),
+        #),
+        #migrations.AddField(
+            #model_name='lineattribute',
+            #name='value_file',
+            #field=models.FileField(blank=True, max_length=255, null=True, upload_to='images/products/%Y/%m/'),
+        #),
+        #migrations.AddField(
+            #model_name='lineattribute',
+            #name='value_float',
+            #field=models.FloatField(blank=True, null=True, verbose_name='Float'),
+        #),
+        #migrations.AddField(
+            #model_name='lineattribute',
+            #name='value_image',
+            #field=models.ImageField(blank=True, max_length=255, null=True, upload_to='images/products/%Y/%m/'),
+        #),
+        #migrations.AddField(
+            #model_name='lineattribute',
+            #name='value_integer',
+            #field=models.IntegerField(blank=True, null=True, verbose_name='Integer'),
+        #),
+        #migrations.AddField(
+            #model_name='lineattribute',
+            #name='value_multi_option',
+            #field=models.ManyToManyField(blank=True, related_name='multi_valued_line_attribute_values', to='catalogue.AddToCartOption', verbose_name='Value multi option'),
+        #),
+        #migrations.AddField(
+            #model_name='lineattribute',
+            #name='value_option',
+            #field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='catalogue.AddToCartOption', verbose_name='Value option'),
+        #),
+        #migrations.AddField(
+            #model_name='lineattribute',
+            #name='value_richtext',
+            #field=models.TextField(blank=True, null=True, verbose_name='Richtext'),
+        #),
+        #migrations.AddField(
+            #model_name='lineattribute',
+            #name='value_text',
+            #field=models.TextField(blank=True, null=True, verbose_name='Text'),
+        #),
 
         migrations.AlterField(
             model_name='line',
