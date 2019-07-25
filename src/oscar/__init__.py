@@ -66,6 +66,9 @@ OSCAR_CORE_APPS = [
     # 3rd-party apps that oscar depends on
     'oscar.vendor.modelchooser',
 
+    # Must come before wagtail.search
+    'haystack',
+
     'wagtail.contrib.routable_page',
     'wagtail.contrib.modeladmin',
     'wagtail.contrib.forms',
@@ -85,7 +88,6 @@ OSCAR_CORE_APPS = [
     'modelcluster',
     'polymorphic',
     'taggit',
-    'haystack',
     'treebeard',
 ]
 
