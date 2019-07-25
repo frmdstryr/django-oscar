@@ -1,6 +1,7 @@
 {% extends "catalogue/browse.html" %}
 
 {% load i18n %}
+{% load wagtailimages_tags %}
 
 {% block title %}
     {{ category.name }} | {{ block.super }}
@@ -38,7 +39,9 @@
         <div class="row">
             <div class="col-sm-9"><p>{{ category.description|safe }}</p></div>
             {% if category.image %}
-                <div class="col-sm-3"><img src="{{ category.image.url }}" alt="{{ category.title }}" class="img-responsive" /></div>
+                <div class="col-sm-3">
+                    {% image category.image max-200x200 class="img-responsive" alt=category.title %}
+                </div>
             {% endif %}
         </div>
     {% endif %}
