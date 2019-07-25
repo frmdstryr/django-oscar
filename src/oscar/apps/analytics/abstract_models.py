@@ -99,9 +99,11 @@ class AbstractUserSearch(models.Model):
     user = models.ForeignKey(
         AUTH_USER_MODEL,
         on_delete=models.CASCADE,
+        null=True,  # Allow anonymous searches
         verbose_name=_("User"))
     query = models.CharField(_("Search term"), max_length=255, db_index=True)
     date_created = models.DateTimeField(_("Date Created"), auto_now_add=True)
+    result_count = models.PositiveIntegerField(default=0)
 
     class Meta:
         abstract = True

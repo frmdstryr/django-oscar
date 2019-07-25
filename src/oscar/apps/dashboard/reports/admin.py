@@ -1,16 +1,20 @@
 from datetime import timedelta
-from django.utils import timezone
 from django.contrib.admin.utils import quote
+from django.contrib.humanize.templatetags import humanize
+from django.db.models import Avg, Count, Sum
+from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
 from oscar.apps.dashboard.base import DashboardAdmin
-from oscar.core.loading import get_model
-from django.contrib.humanize.templatetags import humanize
+from oscar.core.loading import get_class, get_model
 from oscar.core.compat import AUTH_USER_MODEL
 
 
 Basket = get_model('basket', 'Basket')
+ProductRecord = get_model('analytics', 'ProductRecord')
+UserRecord = get_model('analytics', 'UserRecord')
+UserSearch = get_model('analytics', 'UserSearch')
 
 
 class IndexOnlyAdmin(DashboardAdmin):
@@ -47,6 +51,43 @@ class AbandonedCartsAdmin(IndexOnlyAdmin):
 
     def when_abandoned(self, obj):
         return humanize.naturaltime(obj.date_created)
+
+
+class ProductAnalyticsAdmin(IndexOnlyAdmin):
+    model = ProductRecord
+    menu_label = _('Product Analytics')
+    menu_icon = 'cubes'
+    list_display = ('_product', 'num_views', 'num_basket_additions',
+                    'num_purchases')
+
+    _product_admin = None
+
+    def get_product_url(self, product):
+        if self._product_admin is None:
+            self._product_admin = get_class(
+                'dashboard.catalogue.admin', 'ProductAdmin').instance()
+        return self._product_admin.get_action_url('inspect', product.pk)
+
+    def _product(self, record):
+        p = record.product
+        url = self.get_product_url(p)
+        return format_html('<a href="{}">{}</a>', url, p)
+
+
+class CustomerAnalyticsAdmin(IndexOnlyAdmin):
+    model = UserRecord
+    menu_label = _('Customer Analytics')
+    menu_icon = 'users'
+    list_display = ('user', 'num_product_views', 'num_basket_additions',
+                    'num_orders', 'num_order_lines', 'num_order_items',
+                    'total_spent', 'date_last_order')
+
+
+class SearchesAdmin(IndexOnlyAdmin):
+    model = UserSearch
+    menu_label = _('Search Analytics')
+    menu_icon = 'search'
+    list_display = ('user', 'query', 'result_count')
 
 
 class BasketAdmin(DashboardAdmin):

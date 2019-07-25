@@ -91,6 +91,9 @@ class ReportsGroup(DashboardAdminGroup):
     def items(self):
         return (
             get_class('dashboard.reports.admin', 'AbandonedCartsAdmin'),
+            get_class('dashboard.reports.admin', 'ProductAnalyticsAdmin'),
+            get_class('dashboard.reports.admin', 'CustomerAnalyticsAdmin'),
+            get_class('dashboard.reports.admin', 'SearchesAdmin'),
         )
 
 

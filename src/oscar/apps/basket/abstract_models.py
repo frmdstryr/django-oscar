@@ -877,7 +877,8 @@ class AbstractLine(ClusterableModel):
     @property
     def line_tax(self):
         if self.is_tax_known:
-            return self.line_price_incl_tax_incl_discounts - self.line_price_excl_tax_incl_discounts
+            return max(0, (self.line_price_incl_tax_incl_discounts -
+                           self.line_price_excl_tax_incl_discounts))
 
     @property
     def line_price_incl_tax(self):

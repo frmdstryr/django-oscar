@@ -90,8 +90,11 @@ def receive_product_view(sender, product, user, **kwargs):
 
 @receiver(user_search)
 def receive_product_search(sender, query, user, **kwargs):
-    if user and user.is_authenticated and not kwargs.get('raw', False):
-        UserSearch._default_manager.create(user=user, query=query)
+    if not kwargs.get('raw', False):
+        UserSearch._default_manager.create(
+            user=user if user and user.is_authenticated else None,
+            query=query,
+            result_count=sender.results.count())
 
 
 @receiver(basket_addition)
