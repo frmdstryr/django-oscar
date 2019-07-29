@@ -87,7 +87,7 @@ class SearchesAdmin(IndexOnlyAdmin):
     model = UserSearch
     menu_label = _('Search Analytics')
     menu_icon = 'search'
-    list_display = ('user', 'query', 'result_count')
+    list_display = ('user', 'query', 'result_count', 'date_created')
 
 
 class BasketAdmin(DashboardAdmin):
