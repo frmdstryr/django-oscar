@@ -112,9 +112,10 @@ class AbstractOrderAndItemCharges(AbstractMethod):
                 incl_tax=D('0.00'))
 
         charge = self.price_per_order
-        for line in basket.lines.all():
-            if line.product.is_shipping_required:
-                charge += line.quantity * self.price_per_item
+        if self.price_per_item != D('0.00'):
+            for line in basket.lines.all():
+                if line.product.is_shipping_required:
+                    charge += line.quantity * self.price_per_item
 
         # Zero tax is assumed...
         return prices.Price(
