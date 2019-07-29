@@ -13,10 +13,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        #migrations.RemoveField(
-        #    model_name='lineattribute',
-        #    name='value',
-        #),
+        migrations.RemoveField(
+            model_name='lineattribute',
+            name='value',
+        ),
         migrations.AddField(
             model_name='lineattribute',
             name='entity_content_type',
