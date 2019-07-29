@@ -344,8 +344,8 @@ class CheckoutSessionMixin(object):
     def dispatch(self, request, *args, **kwargs):
         # Assign the checkout session manager so it's available in all checkout
         # views.
-        CheckoutSessionData = get_class('
-            checkout.session', 'CheckoutSessionData')
+        CheckoutSessionData = get_class(
+            'checkout.session', 'CheckoutSessionData')
         self.checkout_session = CheckoutSessionData(request)
 
         # Enforce any pre-conditions for the view.
