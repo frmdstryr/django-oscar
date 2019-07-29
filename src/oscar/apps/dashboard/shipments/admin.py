@@ -9,8 +9,6 @@ from wagtail.admin.edit_handlers import (
     ObjectList, extract_panel_definitions_from_model_class
 )
 
-OrderAndItemCharges = get_model('shipping', 'OrderAndItemCharges')
-WeightBased = get_model('shipping', 'WeightBased')
 ShippingMethod = get_model('shipping', 'Method')
 
 
@@ -50,7 +48,7 @@ class ShippingMethodsAdmin(DashboardAdmin):
         """ Called to get all the available shipping method subclasses
 
         """
-        return (OrderAndItemCharges, WeightBased)
+        return ShippingMethod.__subclasses__()
 
     def get_shipping_method(self, shipping_method_name):
         """ Invoked by the create view to lookup the shipping method using
