@@ -3,15 +3,14 @@ from decimal import Decimal as D
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import gettext_lazy as _
 
-from oscar.core.loading import get_classes, get_model
+from oscar.core.loading import get_class, get_model
 
-(Free, NoShippingRequired,
- TaxExclusiveOfferDiscount, TaxInclusiveOfferDiscount) \
-    = get_classes('shipping.methods', ['Free', 'NoShippingRequired',
-                                       'TaxExclusiveOfferDiscount', 'TaxInclusiveOfferDiscount'])
-
-
+TaxExclusiveOfferDiscount = get_class(
+    'shipping.methods', 'TaxExclusiveOfferDiscount')
+TaxInclusiveOfferDiscount = get_class(
+    'shipping.methods', 'TaxInclusiveOfferDiscount')
 ShippingMethod = get_model('shipping', 'Method')
+OrderAndItemCharges = get_model('shipping', 'OrderAndItemCharges')
 
 
 class Repository(object):
@@ -23,7 +22,6 @@ class Repository(object):
     # We default to just free shipping. Customise this class and override this
     # property to add your own shipping methods. This should be a list of
     # instantiated shipping methods.
-    methods = (Free(),)
 
     def get_shipping_methods(self, basket, shipping_addr=None, **kwargs):
         """
@@ -32,8 +30,11 @@ class Repository(object):
         """
         if not basket.is_shipping_required():
             # Special case! Baskets that don't require shipping get a special
-            # shipping method.
-            return [NoShippingRequired()]
+            # shipping method. This is disabled by default to exclude it from
+            # being returned as a normal shipping method.
+            method, created = OrderAndItemCharges.objects.get_or_create(
+                name="No Shipping Required", is_enabled=False)
+            return [method]
 
         methods = self.get_available_shipping_methods(
             basket=basket, shipping_addr=shipping_addr, **kwargs)

@@ -112,8 +112,7 @@ class OrderCreator(object):
                       'total_excl_tax': total.excl_tax,
                       'shipping_incl_tax': shipping_charge.incl_tax,
                       'shipping_excl_tax': shipping_charge.excl_tax,
-                      'shipping_method': shipping_method.name,
-                      'shipping_code': shipping_method.code}
+                      'shipping_method': shipping_method}
         if shipping_address:
             order_data['shipping_address'] = shipping_address
         if billing_address:

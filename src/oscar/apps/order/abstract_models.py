@@ -98,11 +98,12 @@ class AbstractOrder(ClusterableModel):
         'order.ShippingAddress', null=True, blank=True,
         verbose_name=_("Shipping Address"),
         on_delete=models.SET_NULL)
-    shipping_method = models.CharField(
-        _("Shipping method"), max_length=128, blank=True)
 
-    # Identifies shipping code
-    shipping_code = models.CharField(blank=True, max_length=128, default="")
+    # A shipping method in the DB is now required.
+    shipping_method = models.ForeignKey(
+        'shipping.Method',
+        on_delete=models.PROTECT,
+        null=True)
 
     # Use this field to indicate that an order is on hold / awaiting payment
     status = models.CharField(_("Status"), max_length=100, blank=True)
@@ -110,7 +111,6 @@ class AbstractOrder(ClusterableModel):
 
     # Index added to this field for reporting
     date_placed = models.DateTimeField(db_index=True)
-
 
     #: Order status pipeline.  This should be a dict where each (key, value) #:
     #: corresponds to a status and a list of possible statuses that can follow

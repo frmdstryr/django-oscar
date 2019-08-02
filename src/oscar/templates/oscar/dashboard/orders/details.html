@@ -1,6 +1,12 @@
 {% extends "modeladmin/inspect.html" %}
 {% load i18n modeladmin_tags currency_filters static %}
 
+{% block extra_js %}
+    {{ block.super }}
+    <script src="{% static "wagtailadmin/js/modal-workflow.js" %}"></script>
+    <script src="{% static "oscar/js/oscar/modal-editor.js" %}"></script>
+{% endblock %}
+
 {% block fields_output %}
 {% with instance as order %}
 
@@ -120,6 +126,7 @@
     <div class="row payment-and-shipping-section">
         <h2>{% blocktrans %}Payment & Shipping Information{% endblocktrans %}</h2>
         <div class="payment-info col6">
+            {% block payment_info_section %}
             <table class="listing">
                 <thead>
                     <tr>
@@ -174,9 +181,11 @@
                     </tr>
                 </tbody>
             </table>
+            {% endblock %}
         </div>
 
         <div class="shipping-info col6">
+            {% block shipping_info_section %}
             <table class="listing">
                 <thead>
                     <tr>
@@ -194,6 +203,7 @@
                     </tr>
                 </tbody>
             </table>
+            {% endblock %}
         </div>
     </div>
     {% endblock %}
