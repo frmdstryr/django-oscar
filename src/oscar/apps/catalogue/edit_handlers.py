@@ -76,10 +76,9 @@ class ProductAttributesPanel(InlinePanel):
             child_edit_handler = MultiFieldPanel(
                 [FieldPanel(field_name)], heading=attribute.name)
             self.children.append(
-                child_edit_handler.bind_to_model(
-                    related_model).bind_to_instance(instance=subform.instance,
-                                                    form=subform,
-                                                    request=self.request))
+                child_edit_handler.bind_to(model=related_model).bind_to(
+                    instance=subform.instance, form=subform,
+                    request=self.request))
 
         # if this formset is valid, it may have been re-ordered; respect that
         # in case the parent form errored and we need to re-render
