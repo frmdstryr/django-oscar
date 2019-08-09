@@ -72,6 +72,10 @@ class ProductAttributesPanel(InlinePanel):
             field.required = attribute.required
             field.label = attribute.name
 
+            # Restrict options to only selected option group
+            if attribute.type in ('option', 'multi_option'):
+                field.queryset = attribute.option_group.options.all()
+
             # Create the edit handler, only the attribute field type is used
             child_edit_handler = MultiFieldPanel(
                 [FieldPanel(field_name)], heading=attribute.name)
