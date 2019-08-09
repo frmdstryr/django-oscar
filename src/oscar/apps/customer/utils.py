@@ -134,7 +134,7 @@ def get_password_reset_url(user, token_generator=default_token_generator):
     """
     kwargs = {
         'token': token_generator.make_token(user),
-        'uidb64': urlsafe_base64_encode(force_bytes(user.id)).decode(),
+        'uidb64': urlsafe_base64_encode(force_bytes(user.id)),
     }
     return reverse('password-reset-confirm', kwargs=kwargs)
 
