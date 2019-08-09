@@ -1,5 +1,6 @@
 import logging
 import os
+from decimal import Decimal as D
 from datetime import date, datetime
 
 from django import forms
@@ -1288,8 +1289,7 @@ class AbstractAddToCartOption(Orderable):
 
     # Price this option adds to the item price
     price = models.DecimalField(
-        _("Price "), decimal_places=2, max_digits=12,
-        blank=True, null=True)
+        _("Price "), decimal_places=2, max_digits=12, default=D('0.00'))
 
     def __str__(self):
         return self.option
@@ -1363,7 +1363,7 @@ class AbstractOption(Orderable, ClusterableModel):
 
     # Price this option adds
     price = models.DecimalField(
-        _("Price "), decimal_places=2, max_digits=12, blank=True, null=True,
+        _("Price "), decimal_places=2, max_digits=12, default=D('0.00'),
         help_text=_('Price that is added to the item when this option is used'))
 
     panels = [
