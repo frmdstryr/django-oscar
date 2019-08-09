@@ -95,8 +95,7 @@ class CreateView(BaseCreateView, BoundFormMixin):
         form = self.get_bound_form()
         if form.is_valid():
             return self.form_valid(form)
-        else:
-            return self.form_invalid(form)
+        return self.form_invalid(form)
 
 
 class EditView(BaseEditView, BoundFormMixin):
@@ -106,5 +105,4 @@ class EditView(BaseEditView, BoundFormMixin):
         form = self.get_bound_form()
         if form.is_valid():
             return self.form_valid(form)
-        else:
-            return self.form_invalid(form)
+        return self.form_invalid(form)
