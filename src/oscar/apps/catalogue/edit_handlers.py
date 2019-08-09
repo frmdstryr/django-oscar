@@ -73,7 +73,7 @@ class ProductAttributesPanel(InlinePanel):
             field.label = attribute.name
 
             # Restrict options to only selected option group
-            if attribute.type in ('option', 'multi_option'):
+            if attribute.is_option or attribute.is_multi_option:
                 field.queryset = attribute.option_group.options.all()
 
             # Create the edit handler, only the attribute field type is used
