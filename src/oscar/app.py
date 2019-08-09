@@ -40,7 +40,7 @@ class Shop(Application):
             url(r'^catalogue/', self.catalogue_app.urls),
             url(r'^basket/', self.basket_app.urls),
             url(r'^checkout/', self.checkout_app.urls),
-            url(r'^accounts/', self.customer_app.urls),
+            url(r'^account/', self.customer_app.urls),
             url(r'^search/', self.search_app.urls),
             #url(r'^dashboard/', self.dashboard_app.urls),
             url(r'^offers/', self.offer_app.urls),
