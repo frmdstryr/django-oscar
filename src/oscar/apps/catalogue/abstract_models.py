@@ -540,8 +540,6 @@ class AbstractProduct(ClusterableModel):
         to the sub method appropriate for the product's structure.
         """
         getattr(self, '_clean_%s' % self.structure)()
-        if not self.is_parent:
-            self.attr.validate_attributes()
 
     def _clean_standalone(self):
         """
@@ -587,7 +585,6 @@ class AbstractProduct(ClusterableModel):
         if not self.slug:
             self.slug = slugify(self.get_title())
         super().save(*args, **kwargs)
-        self.attr.save()
 
     # Properties
 
@@ -989,77 +986,6 @@ class AbstractProductAttribute(ClusterableModel, Orderable):
         else:
             self._save_value(value_obj, value)
 
-    def validate_value(self, value):
-        validator = getattr(self, '_validate_%s' % self.type)
-        validator(value)
-
-    # Validators
-
-    def _validate_text(self, value):
-        if not isinstance(value, str):
-            raise ValidationError(_("Must be str"))
-    _validate_richtext = _validate_text
-
-    def _validate_float(self, value):
-        try:
-            float(value)
-        except ValueError:
-            raise ValidationError(_("Must be a float"))
-
-    def _validate_integer(self, value):
-        try:
-            int(value)
-        except ValueError:
-            raise ValidationError(_("Must be an integer"))
-
-    def _validate_date(self, value):
-        if not (isinstance(value, datetime) or isinstance(value, date)):
-            raise ValidationError(_("Must be a date or datetime"))
-
-    def _validate_datetime(self, value):
-        if not isinstance(value, datetime):
-            raise ValidationError(_("Must be a datetime"))
-
-    def _validate_boolean(self, value):
-        if not type(value) == bool:
-            raise ValidationError(_("Must be a boolean"))
-
-    def _validate_entity(self, value):
-        if not isinstance(value, Model):
-            raise ValidationError(_("Must be a model instance"))
-
-    def _validate_multi_option(self, value):
-        try:
-            values = iter(value)
-        except TypeError:
-            raise ValidationError(
-                _("Must be a list or AttributeOption queryset"))
-        # Validate each value as if it were an option
-        # Pass in valid_values so that the DB isn't hit multiple times per iteration
-        valid_values = self.option_group.options.values_list(
-            'option', flat=True)
-        for value in values:
-            self._validate_option(value, valid_values=valid_values)
-
-    def _validate_option(self, value, valid_values=None):
-        if not isinstance(value, get_model('catalogue', 'AttributeOption')):
-            raise ValidationError(
-                _("Must be an AttributeOption model object instance"))
-        if not value.pk:
-            raise ValidationError(_("AttributeOption has not been saved yet"))
-        if valid_values is None:
-            valid_values = self.option_group.options.values_list(
-                'option', flat=True)
-        if value.option not in valid_values:
-            raise ValidationError(
-                _("%(enum)s is not a valid choice for %(attr)s") %
-                {'enum': value, 'attr': self})
-
-    def _validate_file(self, value):
-        if value and not isinstance(value, File):
-            raise ValidationError(_("Must be a file field"))
-    _validate_image = _validate_file
-
 
 class AbstractProductAttributeValue(Orderable):
     """
@@ -1161,6 +1087,9 @@ class AbstractProductAttributeValue(Orderable):
         return something appropriate.
         """
         property_name = '_%s_as_text' % self.attribute.type
+        if not self.pk and self.attribute.is_multi_option:
+            # M2M fields cannot be read if not saved so avoid triggering value
+            return 'None'
         return getattr(self, property_name, self.value)
 
     @property
