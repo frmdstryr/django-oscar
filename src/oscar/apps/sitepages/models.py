@@ -2,11 +2,17 @@ from oscar.apps.sitepages.abstract_models import (
     AbstractArticlePage, AbstractArticleNoNavPage,
     AbstractArticleLeftBarPage, AbstractArticleLeftBarNoNavPage,
     AbstractArticleLeftRightBarPage, AbstractArticleLeftRightBarNoNavPage,
-    AbstractBlankShopPage
+    AbstractBlankShopPage, AbstractLandingPage
 )
 from oscar.core.loading import is_model_registered
 
 __all__ = []
+
+if not is_model_registered('sitepages', 'LandingPage'):
+    class LandingPage(AbstractLandingPage):
+        pass
+
+    __all__.append('LandingPage')
 
 if not is_model_registered('sitepages', 'ArticlePage'):
     class ArticlePage(AbstractArticlePage):

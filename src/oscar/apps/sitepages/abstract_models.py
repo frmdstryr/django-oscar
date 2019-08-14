@@ -26,6 +26,17 @@ DEFAULT_BLOCKS = [
 ]
 
 
+class AbstractLandingPage(Page):
+    body = StreamField(DEFAULT_BLOCKS)
+
+    content_panels = Page.content_panels + [
+        StreamFieldPanel('body'),
+    ]
+
+    class Meta:
+        abstract = True
+
+
 class AbstractArticlePage(Page):
     body = StreamField(DEFAULT_BLOCKS)
 

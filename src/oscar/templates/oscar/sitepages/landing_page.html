@@ -1,0 +1,56 @@
+{% extends "layout.html" %}
+{% load i18n %}
+{% load static %}
+{% load promotion_tags %}
+{% load wagtailcore_tags %}
+
+{% block title %}
+    {{ page.title}} | {{ block.super }}
+{% endblock %}
+
+{% block layout %}
+    {# Top-horizontal bar with account, notifictions, dashboard links #}
+    {% block accounts_wrapper %}
+    {% include "partials/nav_accounts.html" %}
+    {% endblock %}
+
+    {% block header%}
+    <div class="page-header action">
+        {% if user.is_staff and not request.is_preview %}
+            <a class="pull-right hidden-xs" href="{% url 'wagtailadmin_pages:edit' page.pk %}"><small><i class="icon-edit"></i> {% trans "Edit this page" %}</small></a>
+        {% endif %}
+        <h1>{{ page.title }}</h1>
+    </div>
+    {% endblock %}
+
+    {% block breadcrumbs %}
+        <ul class="breadcrumb">
+            <li>
+                <a href="{{ homepage_url }}">{% trans "Home" %}</a>
+            </li>
+            <li class="active">{{ page.title }}</li>
+        </ul>
+    {% endblock %}
+
+    {# Render promotions #}
+    <div id="promotions">
+        {% for promotion in promotions_page %}
+            {% render_promotion promotion %}
+        {% endfor %}
+    </div>
+
+    <article>
+    {% for block in page.body %}
+        <section>{% include_block block %}</section>
+    {% endfor %}
+    </article>
+
+     {# Render promotions #}
+     <div id="promotions_bottom">
+        {% for promotion in promotions_bottom %}
+            {% render_promotion promotion %}
+        {% endfor %}
+     </div>
+
+    {% include "partials/footer.html" %}
+{% endblock layout %}
