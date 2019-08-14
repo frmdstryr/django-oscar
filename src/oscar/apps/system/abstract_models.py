@@ -1,18 +1,36 @@
 from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from phonenumber_field.modelfields import PhoneNumberField
+from oscar.core.edit_handlers import (
+    FieldPanel, InlinePanel, MultiFieldPanel, FieldRowPanel,
+    TabbedInterface, ObjectList, AutocompletePanel, ModelChooserPanel
+)
+from wagtail.contrib.settings.models import BaseSetting, register_setting
+from wagtail.images.edit_handlers import ImageChooserPanel
 
-
-class AbstractConfiguration(models.Model):
+class AbstractConfiguration(BaseSetting):
     """ System configuration
 
     """
     shop_name = models.CharField(max_length=64)
     shop_tagline = models.CharField(max_length=256)
-    shop_logo = models.ImageField(
-        upload_to=settings.OSCAR_PROMOTION_FOLDER,
-        default='img/ui/image_not_found.jpg',
-        max_length=255)
+    shop_phone_number = PhoneNumberField(default="1-800-799-9999")
+    shop_email = models.EmailField(default="sales@example.com")
+
+    shop_logo = models.ForeignKey(
+        'images.OscarImage', null=True, on_delete=models.PROTECT,
+        related_name='+', help_text=_("Logo used on light backgrounds"))
+    shop_logo_alt = models.ForeignKey(
+        'images.OscarImage', null=True, on_delete=models.PROTECT,
+        related_name='+', help_text=_("Logo used on dark backgrounds"))
+    shop_logo_print = models.ForeignKey(
+        'images.OscarImage', null=True, on_delete=models.PROTECT,
+        related_name='+', help_text=_("Logo used on print media"))
+    shop_banner = models.ForeignKey(
+        'images.OscarImage', null=True, on_delete=models.PROTECT,
+        related_name='+', help_text=_("Banner imaged used by templates"))
+
     homepage_url = models.CharField(max_length=256, default='/')
 
     #: Use css by default
@@ -30,52 +48,38 @@ class AbstractConfiguration(models.Model):
         default="yy-mm-dd hh:ii"
     )
 
-    #: Time for date picker
-    shop_date_picker_minute_step = models.PositiveSmallIntegerField(default=15)
+    shop_panels = [
+        FieldPanel('shop_name'),
+        FieldPanel('shop_tagline'),
+        FieldPanel('shop_phone_number'),
+        FieldPanel('shop_email'),
+        FieldPanel('homepage_url'),
+    ]
 
-    #: Dashboard editor settings
-    dashboard_editor_plugins = models.CharField(
-        max_length=255,
-        default="link lists",
-        blank=True
-    )
-    dashboard_editor_menubar = models.CharField(
-        max_length=255,
-        default="",
-        blank=True
-    )
-    dashboard_editor_toolbar_layout = models.CharField(
-        max_length=255,
-        default="styleselect | bold italic blockquote | bullist numlist | link",
-        blank=True
-    )
-    dashboard_editor_context_menu = models.CharField(
-        max_length=255,
-        default="copy cut paste link",
-        blank=True
-    )
+    theme_panels = [
+        ImageChooserPanel('shop_logo'),
+        ImageChooserPanel('shop_logo_alt'),
+        ImageChooserPanel('shop_logo_print'),
+        ImageChooserPanel('shop_banner'),
+    ]
+
+    config_panels = [
+        FieldPanel('google_analytics_id'),
+        FieldRowPanel([
+            FieldPanel('shop_date_format'),
+            FieldPanel('shop_time_format'),
+            FieldPanel('shop_datetime_format'),
+        ], heading=_('Dates')),
+    ]
+
+    edit_handler = TabbedInterface([
+        ObjectList(shop_panels, heading=_('Shop')),
+        ObjectList(theme_panels, heading=_('Theme')),
+        ObjectList(config_panels, heading=_('Config')),
+    ])
 
     class Meta:
         abstract = True
         app_label = 'system'
         verbose_name = _("Configuration")
-
-    def as_context(self):
-        return {
-            'shop_name': self.shop_name,
-            'shop_tagline': self.shop_tagline,
-            'shop_logo': self.shop_logo,
-            'shop_date_format': self.shop_date_format,
-            'shop_time_format': self.shop_time_format,
-            'shop_datetime_format': self.shop_datetime_format,
-            'shop_date_picker_minute_step': self.shop_date_picker_minute_step,
-            'dashboard_editor_plugins': self.dashboard_editor_plugins,
-            'dashboard_editor_menubar': self.dashboard_editor_menubar,
-            'dashboard_editor_toolbar_layout': self.dashboard_editor_toolbar_layout,
-            'dashboard_editor_context_menu': self.dashboard_editor_context_menu,
-            'homepage_url': self.homepage_url,
-            # Fallback to old settings name for backwards compatibility
-            'use_less': self.use_less,
-            'google_analytics_id': self.google_analytics_id or None
-        }
 

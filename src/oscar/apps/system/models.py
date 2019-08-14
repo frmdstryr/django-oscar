@@ -7,6 +7,7 @@ __all__ = []
 
 
 if not is_model_registered('system', 'Configuration'):
+    @register_setting
     class Configuration(AbstractConfiguration):
         pass
 
