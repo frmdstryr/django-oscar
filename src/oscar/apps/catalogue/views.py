@@ -15,6 +15,7 @@ Product = get_model('catalogue', 'product')
 Category = get_model('catalogue', 'category')
 ProductAlert = get_model('customer', 'ProductAlert')
 ProductAlertForm = get_class('customer.forms', 'ProductAlertForm')
+ProductReviewForm = get_class('catalogue.reviews.forms', 'ProductReviewForm')
 get_product_search_handler_class = get_class(
     'catalogue.search_handlers', 'get_product_search_handler_class')
 
@@ -38,11 +39,11 @@ class ProductDetailView(DetailView):
         Ensures that the correct URL is used before rendering a response
         """
         self.object = product = self.get_object()
-        
+
         redirect = self.redirect_if_necessary(request.path, product)
         if redirect is not None:
             return redirect
-        
+
         # A non-admin user is trying to view a disabled product
         if not product.is_enabled and not request.user.is_staff:
             msg = "{} is disabled".format(product)
@@ -72,6 +73,7 @@ class ProductDetailView(DetailView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['alert_form'] = self.get_alert_form()
+        ctx['review_form'] = self.get_review_form()
         ctx['has_active_alert'] = self.get_alert_status()
         return ctx
 
@@ -87,6 +89,10 @@ class ProductDetailView(DetailView):
 
     def get_alert_form(self):
         return ProductAlertForm(
+            user=self.request.user, product=self.object)
+
+    def get_review_form(self):
+        return ProductReviewForm(
             user=self.request.user, product=self.object)
 
     def send_signal(self, request, response, product):
@@ -173,9 +179,9 @@ class ProductCategoryView(TemplateView):
 
     def get_category(self):
         category = get_object_or_404(
-            Category, pk=self.kwargs['pk'], live=True)
+            Category, pk=self.kwargs['pk'], is_enabled=True)
         if category.is_disabled():
-            raise Http404() 
+            raise Http404()
         return category
 
     def redirect_if_necessary(self, current_path, category):
