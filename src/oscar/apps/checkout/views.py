@@ -261,6 +261,7 @@ class ShippingMethodView(CheckoutSessionMixin, generic.FormView):
                       'check_basket_is_valid',
                       'check_user_email_is_captured']
     success_url = reverse_lazy('checkout:payment-method')
+    auto_select_method = True
 
     def post(self, request, *args, **kwargs):
         self._methods = self.get_available_shipping_methods()
@@ -292,7 +293,7 @@ class ShippingMethodView(CheckoutSessionMixin, generic.FormView):
                 "Shipping is unavailable for your chosen address - please "
                 "choose another"))
             return redirect('checkout:shipping-address')
-        elif len(self._methods) == 1:
+        elif len(self._methods) == 1 and self.auto_select_method:
             # Only one shipping method - set this and redirect onto the next
             # step
             self.checkout_session.use_shipping_method(self._methods[0].code)
