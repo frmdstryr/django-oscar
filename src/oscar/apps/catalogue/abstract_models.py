@@ -25,6 +25,7 @@ from oscar.core.loading import get_class, get_model
 from oscar.core.utils import slugify
 from oscar.core.validators import non_python_keyword
 from oscar.core.edit_handlers import ReadOnlyPanel
+from oscar.templatetags.currency_filters import currency
 from oscar.models.fields import AutoSlugField, NullCharField
 from oscar.models.fields.slugfield import SlugField
 
@@ -1221,6 +1222,8 @@ class AbstractAddToCartOption(Orderable):
         _("Price "), decimal_places=2, max_digits=12, default=D('0.00'))
 
     def __str__(self):
+        if self.price > 0:
+            return '%s (+%s)' % (self.option, currency(self.price))
         return self.option
 
     class Meta:

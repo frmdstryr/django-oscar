@@ -9,6 +9,7 @@ from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db import models
 from django.db.models import Sum
 from django.utils.encoding import smart_text
+from django.utils.functional import cached_property
 from django.utils.html import strip_tags
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
@@ -987,6 +988,15 @@ class AbstractLineAttribute(models.Model):
     entity_object_id = models.PositiveIntegerField(
         null=True, blank=True, editable=False)
 
+    @cached_property
+    def price(self):
+        add_to_cart_option = self.option
+        if add_to_cart_option.is_option:
+            return self.value_option.price
+        elif self.is_multi_option:
+            return sum([opt.price for opt in self.value_multi_option.all()])
+        return add_to_cart_option.price
+
     def _get_value(self):
         value = getattr(self, 'value_%s' % self.option.type)
         if hasattr(value, 'all'):
@@ -1013,7 +1023,6 @@ class AbstractLineAttribute(models.Model):
         app_label = 'basket'
         verbose_name = _('Line attribute')
         verbose_name_plural = _('Line attributes')
-
 
     def __str__(self):
         return self.summary()
