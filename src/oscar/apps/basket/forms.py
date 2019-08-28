@@ -257,12 +257,13 @@ class AddToBasketForm(forms.Form):
         This is designed to be overridden so that specific widgets can be used
         for certain types of options.
         """
-        if option.type in ('option', 'multi_option'):
+        if option.is_option or option.is_multi_option:
             if option.option_group is None and not option.is_required:
                 return  # If no options exist ignore this field
 
         factory = AddToBasketForm.FIELD_FACTORIES[option.type]
-        self.fields[option.code] = factory(option)
+        field = self.fields[option.code] = factory(option)
+        return field # Return so it's easier to modify
 
     # Cleaning
     def clean_child_id(self):
