@@ -1215,7 +1215,11 @@ class AbstractAddToCartOption(Orderable):
         on_delete=models.CASCADE,
         related_name='options',
         verbose_name=_("Group"))
-    option = models.CharField(_('Option'), max_length=255)
+    option = models.CharField(_('Option'), max_length=255, help_text=_(
+        "The display name for the option on the frontend."))
+
+    sku = models.CharField(_('SKU'), max_length=255, default="", help_text=_(
+        "A suffix added to the product option sku when this option is used."))
 
     # Price this option adds to the item price
     price = models.DecimalField(
@@ -1246,7 +1250,8 @@ class AbstractOption(Orderable, ClusterableModel):
     for a particular item.  Instead, option need to be specified by a customer
     when they add the item to their basket.
     """
-    name = models.CharField(_("Name"), max_length=128)
+    name = models.CharField(_("Name"), max_length=128, help_text=_(
+        "The display name for the option on the frontend."))
     code = AutoSlugField(_("Code"), max_length=128, unique=True,
                          populate_from='name')
 
@@ -1298,9 +1303,13 @@ class AbstractOption(Orderable, ClusterableModel):
         _("Price "), decimal_places=2, max_digits=12, default=D('0.00'),
         help_text=_('Price that is added to the item when this option is used'))
 
+    sku = models.CharField(_('SKU'), max_length=255, default="", help_text=_(
+        "A suffix added to the product sku when this option is used."))
+
     panels = [
         MultiFieldPanel([
             FieldPanel('name'),
+            FieldPanel('sku'),
             FieldPanel('type'),
             FieldPanel('required'),
             FieldPanel('price'),

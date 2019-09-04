@@ -120,7 +120,9 @@ class AbstractStockRecord(Orderable):
     #: which we store here.  This will sometimes be the same the product's UPC
     #: but not always.  It should be unique per partner.
     #: See also http://en.wikipedia.org/wiki/Stock-keeping_unit
-    partner_sku = models.CharField(_("Partner SKU"), max_length=128)
+    partner_sku = models.CharField(
+        _("Partner SKU"), max_length=128, help_text=_(
+            "This must also include the options used"))
 
     # Price info:
     price_currency = models.CharField(
@@ -148,18 +150,18 @@ class AbstractStockRecord(Orderable):
 
     #: Number of items in stock
     num_in_stock = models.PositiveIntegerField(
-        _("Number in stock"), blank=True, null=True)
+        _("Number in stock"), blank=True, null=True, default=0)
 
     #: The amount of stock allocated to orders but not fed back to the master
     #: stock system.  A typical stock update process will set the num_in_stock
     #: variable to a new value and reset num_allocated to zero
     num_allocated = models.IntegerField(
-        _("Number allocated"), blank=True, null=True)
+        _("Number allocated"), blank=True, null=True, default=0)
 
     #: Threshold for low-stock alerts.  When stock goes beneath this threshold,
     #: an alert is triggered so warehouse managers can order more.
     low_stock_threshold = models.PositiveIntegerField(
-        _("Low Stock Threshold"), blank=True, null=True)
+        _("Low Stock Threshold"), blank=True, null=True, default=5)
 
     # Date information
     date_created = models.DateTimeField(_("Date created"), auto_now_add=True)

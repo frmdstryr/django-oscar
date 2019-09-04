@@ -5,11 +5,10 @@ register = template.Library()
 
 
 @register.simple_tag
-def purchase_info_for_product(request, product):
+def purchase_info_for_product(request, product, options=None):
     if product.is_parent:
-        return request.strategy.fetch_for_parent(product)
-
-    return request.strategy.fetch_for_product(product)
+        return request.strategy.fetch_for_parent(product, options)
+    return request.strategy.fetch_for_product(product, options)
 
 
 @register.simple_tag

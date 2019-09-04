@@ -153,13 +153,16 @@ class SavedLineForm(forms.ModelForm):
             # skip further validation (see issue #666)
             return cleaned_data
 
+        saved_line = self.instance
+
         # Get total quantity of all lines with this product (there's normally
         # only one but there can be more if you allow product options).
-        lines = self.basket.lines.filter(product=self.instance.product)
+        lines = self.basket.lines.filter(product=saved_line.product)
         current_qty = lines.aggregate(Sum('quantity'))['quantity__sum'] or 0
-        desired_qty = current_qty + self.instance.quantity
+        desired_qty = current_qty + saved_line.quantity
 
-        result = self.strategy.fetch_for_product(self.instance.product)
+        options = saved_line.product_options
+        result = self.strategy.fetch_for_product(saved_line.product, options)
         is_available, reason = result.availability.is_purchase_permitted(
             quantity=desired_qty)
         if not is_available:
@@ -223,6 +226,7 @@ class AddToBasketForm(forms.Form):
         """
         choices = []
         disabled_values = []
+        options = None # TODO: Get info per option
         for child in product.children.all():
             # Build a description of the child, including any pertinent
             # attributes
@@ -233,7 +237,7 @@ class AddToBasketForm(forms.Form):
                 summary = child.get_title()
 
             # Check if it is available to buy
-            info = self.basket.strategy.fetch_for_product(child)
+            info = self.basket.strategy.fetch_for_product(child, options)
             if not info.availability.is_available_to_buy:
                 disabled_values.append(child.id)
 
@@ -306,7 +310,8 @@ class AddToBasketForm(forms.Form):
         return getattr(self, 'child_product', self.parent_product)
 
     def clean(self):
-        info = self.basket.strategy.fetch_for_product(self.product)
+        options = self.cleaned_options()
+        info = self.basket.strategy.fetch_for_product(self.product, options)
 
         # Check that a price was found by the strategy
         if not info.price.exists:

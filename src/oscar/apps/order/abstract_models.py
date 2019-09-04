@@ -945,12 +945,14 @@ class AbstractLine(ClusterableModel):
 
         try:
             basket_line = basket.lines.get(product=self.product)
+            options = basket_line.product_options
         except basket.lines.model.DoesNotExist:
             desired_qty = self.quantity
+            options = None
         else:
             desired_qty = basket_line.quantity + self.quantity
 
-        result = strategy.fetch_for_product(self.product)
+        result = strategy.fetch_for_product(self.product, options)
         is_available, reason = result.availability.is_purchase_permitted(
             quantity=desired_qty)
         if not is_available:

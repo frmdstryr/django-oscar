@@ -83,9 +83,11 @@ def send_product_alerts(product):   # noqa C901 too complex
     num_notifications = 0
     selector = Selector()
     for alert in alerts:
+        options = None # TODO: This may not match the configuratino that was saved
+
         # Check if the product is available to this user
         strategy = selector.strategy(user=alert.user)
-        data = strategy.fetch_for_product(product)
+        data = strategy.fetch_for_product(product, options)
         if not data.availability.is_available_to_buy:
             continue
 

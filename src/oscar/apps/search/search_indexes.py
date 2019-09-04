@@ -29,7 +29,7 @@ class ProductIndex(indexes.SearchIndex, indexes.Indexable):
 
     date_created = indexes.DateTimeField(model_attr='date_created')
     date_updated = indexes.DateTimeField(model_attr='date_updated')
-    
+
     is_enabled = indexes.BooleanField(model_attr='is_enabled')
 
     _strategy = None
@@ -68,10 +68,11 @@ class ProductIndex(indexes.SearchIndex, indexes.Indexable):
     def prepare_price(self, obj):
         strategy = self.get_strategy()
         result = None
+        options = None
         if obj.is_parent:
-            result = strategy.fetch_for_parent(obj)
+            result = strategy.fetch_for_parent(obj, options)
         elif obj.has_stockrecords:
-            result = strategy.fetch_for_product(obj)
+            result = strategy.fetch_for_product(obj, options)
 
         if result:
             if result.price.is_tax_known:
@@ -80,11 +81,12 @@ class ProductIndex(indexes.SearchIndex, indexes.Indexable):
 
     def prepare_num_in_stock(self, obj):
         strategy = self.get_strategy()
+        options = None
         if obj.is_parent:
             # Don't return a stock level for parent products
             return None
         elif obj.has_stockrecords:
-            result = strategy.fetch_for_product(obj)
+            result = strategy.fetch_for_product(obj, options)
             return result.stockrecord.net_stock_level
 
     def prepare(self, obj):

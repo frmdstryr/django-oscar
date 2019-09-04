@@ -251,9 +251,24 @@ class ProductOptionAdmin(DashboardAdmin):
     dashboard_url = 'product-cart-options'
     menu_label = _('Add to cart options')
     menu_icon = 'shopping-basket'
-    list_display = ('name', 'type')
+    list_display = ('name', 'sku', 'type', 'sku_map')
     list_filter = ('type',)
     search_fields = ('name', )
+
+    # =========================================================================
+    # Display fields
+    # =========================================================================
+    def sku_map(self, obj):
+        options = []
+        template = ['<ul>']
+        if (obj.is_option or obj.is_multi_option) and obj.option_group:
+            for opt in obj.option_group.options.all():
+                template.append('<li>{}{} - {}</li>')
+                options.extend([obj.sku, opt.sku, opt.option])
+        elif obj.is_multi_option:
+            pass
+        template.append('</ul>')
+        return format_html(''.join(template), *options)
 
 
 class AddToCartOptionGroupAdmin(DashboardAdmin):

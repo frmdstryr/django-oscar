@@ -61,9 +61,8 @@ class Base(object):
         if request and request.user.is_authenticated:
             self.user = request.user
 
-    def fetch_for_product(self, product, stockrecord=None):
-        """
-        Given a product, return a ``PurchaseInfo`` instance.
+    def fetch_for_product(self, product, options, stockrecord=None):
+        """ Get a `PurchaseInfo` instance for a configured product.
 
         The ``PurchaseInfo`` class is a named tuple with attributes:
 
@@ -77,18 +76,30 @@ class Base(object):
         raise NotImplementedError(
             "A strategy class must define a fetch_for_product method "
             "for returning the availability and pricing "
-            "information."
-        )
+            "information.")
 
-    def fetch_for_parent(self, product):
-        """
-        Given a parent product, fetch a ``StockInfo`` instance
+    def fetch_for_parent(self, product, options):
+        """ Fetch a stock info instance for the given product configuration.
+
+        Parameters
+        ----------
+        product: Product
+            The product to retrive stock info for
+        options: List[Dict] or None
+            A list of dictionaries containing an option and value key with
+            the option and configured value.
+
+        Returns
+        -------
+        result: StockInfo
+            The stock information for this product configuration.
+
         """
         raise NotImplementedError(
             "A strategy class must define a fetch_for_parent method "
             "for returning the availability and pricing "
-            "information."
-        )
+            "information.")
+
 
     def fetch_for_line(self, line, stockrecord=None):
         """
@@ -100,9 +111,7 @@ class Base(object):
         products, we need to look at the availability of each contained product
         to determine overall availability.
         """
-        # Default to ignoring any basket line options as we don't know what to
-        # do with them within Oscar - that's up to your project to implement.
-        return self.fetch_for_product(line.product)
+        return self.fetch_for_product(line.product, line.product_options)
 
 
 class Structured(Base):
@@ -115,29 +124,29 @@ class Structured(Base):
     #) An availability policy
     """
 
-    def fetch_for_product(self, product, stockrecord=None):
+    def fetch_for_product(self, product, options, stockrecord=None):
         """
         Return the appropriate ``PurchaseInfo`` instance.
 
         This method is not intended to be overridden.
         """
         if stockrecord is None:
-            stockrecord = self.select_stockrecord(product)
+            stockrecord = self.select_stockrecord(product, options)
         return PurchaseInfo(
             price=self.pricing_policy(product, stockrecord),
             availability=self.availability_policy(product, stockrecord),
             stockrecord=stockrecord)
 
-    def fetch_for_parent(self, product):
+    def fetch_for_parent(self, product, options):
         # Select children and associated stockrecords
-        children_stock = self.select_children_stockrecords(product)
+        children_stock = self.select_children_stockrecords(product, options)
         return PurchaseInfo(
             price=self.parent_pricing_policy(product, children_stock),
             availability=self.parent_availability_policy(
                 product, children_stock),
             stockrecord=None)
 
-    def select_stockrecord(self, product):
+    def select_stockrecord(self, product, options):
         """
         Select the appropriate stockrecord
         """
@@ -145,16 +154,19 @@ class Structured(Base):
             "A structured strategy class must define a "
             "'select_stockrecord' method")
 
-    def select_children_stockrecords(self, product):
+    def select_children_stockrecords(self, product, options):
         """
         Select appropriate stock record for all children of a product
         """
         records = []
         for child in product.children.all():
             # Use tuples of (child product, stockrecord)
-            records.append((child, self.select_stockrecord(child)))
+            records.append((child, self.select_stockrecord(child, options)))
         return records
 
+    # -----------------------------------------------------------------------
+    # These require stockrecords
+    # -----------------------------------------------------------------------
     def pricing_policy(self, product, stockrecord):
         """
         Return the appropriate pricing policy
@@ -194,11 +206,8 @@ class UseFirstStockRecord(object):
     product was permitted.
     """
 
-    def select_stockrecord(self, product):
-        try:
-            return product.stockrecords.all()[0]
-        except IndexError:
-            return None
+    def select_stockrecord(self, product, options):
+        return product.stockrecords.all().first()
 
 
 class StockRequired(object):
@@ -214,8 +223,7 @@ class StockRequired(object):
         if not product.get_product_class().track_stock:
             return Available()
         else:
-            return StockRequiredAvailability(
-                stockrecord.net_stock_level)
+            return StockRequiredAvailability(stockrecord.net_stock_level)
 
     def parent_availability_policy(self, product, children_stock):
         # A parent product is available if one of its children is

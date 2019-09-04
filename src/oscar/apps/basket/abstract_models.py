@@ -189,7 +189,7 @@ class AbstractBasket(ClusterableModel):
         """
         # The built-in strategies don't use options, so initially disregard
         # them.
-        return self.strategy.fetch_for_product(product)
+        return self.strategy.fetch_for_product(product, options)
 
     def add_product(self, product, quantity=1, options=None):
         """
@@ -809,16 +809,13 @@ class AbstractLine(ClusterableModel):
         # Only one of the incl- and excl- discounts should be non-zero
         return max(self._discount_incl_tax, self._discount_excl_tax)
 
-    @property
+    @cached_property
     def purchase_info(self):
         """
         Return the stock/price info
         """
-        if not hasattr(self, '_info'):
-            # Cache the PurchaseInfo instance.
-            self._info = self.basket.strategy.fetch_for_line(
-                self, self.stockrecord)
-        return self._info
+        # Cache the PurchaseInfo instance.
+        return self.basket.strategy.fetch_for_line(self, self.stockrecord)
 
     @property
     def is_tax_known(self):
@@ -933,6 +930,11 @@ class AbstractLine(ClusterableModel):
     @property
     def description(self):
         return smart_text(self.product)
+
+    @property
+    def product_options(self):
+        attrs = self.attributes.all()
+        return [{'option': a.option, 'value': a.value} for a in attrs]
 
     @property
     def has_attributes(self):
