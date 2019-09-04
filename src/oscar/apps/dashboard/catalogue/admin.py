@@ -104,7 +104,7 @@ class ProductAdmin(DashboardAdmin, ThumbnailMixin):
     menu_icon = 'cubes'
     dashboard_url = 'products'
     list_display = (
-        'id', 'admin_thumb', 'title', 'product_class', 'inventory',
+        'id', 'admin_thumb', 'title', 'product_class', 'inventory', 'sku_map',
         'price', 'date_updated', 'is_enabled')
     list_filter = ('stockrecords__partner', 'product_class', 'is_enabled',
                    'date_updated', 'date_created',
@@ -173,6 +173,15 @@ class ProductAdmin(DashboardAdmin, ThumbnailMixin):
         return format_html(
             '<ul><li><img src="{}"/> {}</li><li>{}</li><li>{}</li></ul>',
             static(icon), num_in_stock, num_allocated, num_available)
+
+    def sku_map(self, product):
+        template = ['<ul>']
+        vars = []
+        for stockrecord in product.stockrecords.all()[:3]:
+            template.append('<li>{}</li>')
+            vars.append(stockrecord.partner_sku)
+        template.append('</ul>')
+        return format_html(''.join(template), *vars)
 
     def price(self, product):
         """ Get the price of the first stock record (if it  exists)

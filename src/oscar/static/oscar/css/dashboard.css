@@ -18,11 +18,11 @@ td.modal-editor::after {
     color: #007d7e;
 }
 
-.field-inventory ul {
+.field-inventory ul, .field-sku_map ul {
     margin: 0;
 }
 
-.field-inventory li {
+.field-inventory li, .field-sku_map li {
     white-space: nowrap;
 }
 
