@@ -506,6 +506,18 @@ class AbstractProduct(ClusterableModel):
         else:
             return self.get_title()
 
+    def __le__(self, other):
+        return self.title <= other.title
+
+    def __lt__(self, other):
+        return self.title < other.title
+
+    def __gt__(self, other):
+        return self.title > other.title
+
+    def __ge__(self, other):
+        return self.title >= other.title
+
     def get_absolute_url(self):
         """
         Return a product's absolute url
