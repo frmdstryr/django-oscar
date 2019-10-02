@@ -105,9 +105,9 @@ class ProductAdmin(DashboardAdmin, ThumbnailMixin):
     dashboard_url = 'products'
     list_display = (
         'id', 'admin_thumb', 'title', 'product_class', 'inventory', 'sku_map',
-        'price', 'date_updated', 'is_enabled')
+        'category', 'price', 'date_updated', 'is_enabled')
     list_filter = ('stockrecords__partner', 'product_class', 'is_enabled',
-                   'date_updated', 'date_created',
+                   'categories', 'date_updated', 'date_created',
                    'stockrecords__num_in_stock')
     search_fields = ('title', 'upc')
 
@@ -180,6 +180,15 @@ class ProductAdmin(DashboardAdmin, ThumbnailMixin):
         for stockrecord in product.stockrecords.all()[:3]:
             template.append('<li>{}</li>')
             vars.append(stockrecord.partner_sku)
+        template.append('</ul>')
+        return format_html(''.join(template), *vars)
+
+    def category(self, product):
+        template = ['<ul>']
+        vars = []
+        for category in product.categories.all()[:3]:
+            template.append('<li>{}</li>')
+            vars.append(category.title)
         template.append('</ul>')
         return format_html(''.join(template), *vars)
 
