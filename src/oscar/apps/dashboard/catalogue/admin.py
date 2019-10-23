@@ -321,5 +321,3 @@ class ProductReviewAdmin(DashboardAdmin):
         result = queryset.filter(status=ProductReview.FOR_MODERATION).update(
             status=ProductReview.REJECTED)
         messages.success(request, _('%s reviews marked as rejected' % result))
-
-

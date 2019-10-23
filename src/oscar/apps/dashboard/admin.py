@@ -111,7 +111,7 @@ class DashboardSite:
     _registry = {}
 
     # List of all model admins
-    _model_admins = []
+    model_admins = []
 
     @classmethod
     def instance(cls):
@@ -125,9 +125,6 @@ class DashboardSite:
             name = self.__class__.__name__
             raise RuntimeError("Only one instance of %s can exist,"
                                "please use instance()" % name)
-    @property
-    def model_admins(self):
-        return self._model_admins
 
     @property
     def panels(self):
@@ -194,13 +191,14 @@ class DashboardSite:
         with this site instance.
 
         """
-        if model_admin in self._model_admins:
+        if model_admin in self.model_admins:
             raise ImproperlyConfigured(
                 "%s is already registered!" % model_admin)
 
         # TODO: This blows away and admin that exists there
-        self._registry[model_admin.model] = model_admin
+        if hasattr(model_admin, 'model'):
+            self._registry[model_admin.model] = model_admin
 
         model_admin.admin_site = self
-        self._model_admins.append(model_admin)
+        self.model_admins.append(model_admin)
 

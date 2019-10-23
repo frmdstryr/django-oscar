@@ -1,6 +1,7 @@
 from django.conf.urls import url
-from django.utils.translation import ugettext as _
+from django.contrib.auth.models import Permission
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.translation import ugettext as _
 
 from oscar.core.loading import get_class
 
@@ -8,7 +9,10 @@ from wagtail.contrib.modeladmin.helpers import (
     PermissionHelper, ButtonHelper, AdminURLHelper, PageAdminURLHelper,
     PagePermissionHelper
 )
-from wagtail.contrib.modeladmin.options import ModelAdmin, ModelAdminGroup
+from wagtail.contrib.modeladmin.options import (
+    ModelAdmin, ModelAdminGroup, ModelAdminMenuItem, WagtailRegisterable,
+    default_django_admin_site
+)
 
 from .mixins import BulkActionsMixin, InlineEditableMixin
 
@@ -248,6 +252,106 @@ class DashboardAdmin(ModelAdmin, BulkActionsMixin, InlineEditableMixin):
             url = self.get_action_url('inline', result.pk)
             attrs['data-url'] = f'{url}?fields={field_name}'
         return attrs
+
+
+class DashboardPage(WagtailRegisterable):
+    """ An admin that has no model but just shows pages
+
+    """
+    # Static storage to access an instance by importing and calling instance
+    _instances = {}
+
+    menu_label = None
+    menu_icon = None
+    menu_order = None
+
+    permission_helper = None
+    index_url = None
+
+    class NoModel:
+        pass
+    model = NoModel
+
+    @classmethod
+    def instance(cls):
+        """ In order to prevent different instances of the ModelAdmins from
+        floating around use this method to get or create one.
+
+        """
+        if cls not in DashboardPage._instances:
+            DashboardPage._instances[cls] = cls()
+        return DashboardPage._instances[cls]
+
+    def __init__(self, parent=None):
+        """
+        Don't allow initialisation unless self.model is set to a valid model
+        """
+        self.parent = parent
+        self.permission_helper = self.get_permission_helper()
+        self.url_helper = self.get_url_helper()
+
+        # Needed to support RelatedFieldListFilter in Django 2.2+
+        # See: https://github.com/wagtail/wagtail/issues/5105
+        self.admin_site = default_django_admin_site
+
+    def get_permission_helper(self):
+        """ Delegates all calls to this instance """
+        page = self
+        class PermissionHelper:
+            def __getattr__(self, name):
+                return getattr(page, name)
+        return PermissionHelper()
+
+    def get_url_helper(self):
+        """ Delegates all calls to this instance """
+        page = self
+        class UrlHelper:
+            def __getattr__(self, name):
+                return getattr(page, name)
+        return UrlHelper()
+
+    def get_menu_label(self):
+        """
+        Returns the label text to be used for the menu item.
+        """
+        return self.menu_label or 'Unnamed page'
+
+    def get_menu_order(self):
+        """
+        Returns the 'order' to be applied to the menu item. 000 being first
+        place. Where ModelAdminGroup is used, the menu_order value should be
+        applied to that, and any ModelAdmin classes added to 'items'
+        attribute will be ordered automatically, based on their order in that
+        sequence.
+        """
+        return self.menu_order or 999
+
+    def get_menu_icon(self):
+        """
+        Returns the icon to be used for the menu item. The value is prepended
+        with 'icon-' to create the full icon class name. For design
+        consistency, the same icon is also applied to the main heading for
+        views called by this class.
+        """
+        if self.menu_icon:
+            return self.menu_icon
+
+    def get_menu_item(self, order=None):
+        """
+        Utilised by Wagtail's 'register_menu_item' hook to create a menu item
+        to access the listing view, or can be called by ModelAdminGroup
+        to create a SubMenu
+        """
+        return ModelAdminMenuItem(self, order or self.get_menu_order())
+
+    def get_permissions_for_registration(self):
+        return Permission.objects.none()
+
+    def get_admin_urls_for_registration(self):
+        return tuple()
+
+    def user_can_list(self, user):
+        return True
 
 
 class DashboardAdminGroup(ModelAdminGroup):
