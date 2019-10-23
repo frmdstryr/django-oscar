@@ -364,6 +364,12 @@ class AbstractProduct(ClusterableModel):
     slug = models.SlugField(_('Slug'), max_length=255, unique=False)
     description = RichTextField(_('Description'), blank=True)
 
+    # Search description for in the <meta name="description"> tag
+    search_description = models.TextField(
+        _('Search Description'), blank=True,
+        help_text=_("A short description for search engines to display. If not "
+                    "given the full product description will be used instead."))
+
     #: "Kind" of product, e.g. T-Shirt, Book, etc.
     #: None for child products, they inherit their parent's product class
     product_class = models.ForeignKey(
@@ -436,6 +442,7 @@ class AbstractProduct(ClusterableModel):
         FieldPanel('title', classname="full title"),
         FieldPanel('upc'),
         FieldPanel('description', classname="full"),
+        FieldPanel('search_description'),
         FieldPanel('is_enabled'),
     ]
     inventory_panels = [
