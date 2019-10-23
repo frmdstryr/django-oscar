@@ -1,9 +1,16 @@
 from oscar.apps.analytics.abstract_models import (
-    AbstractProductRecord, AbstractUserProductView,
-    AbstractUserRecord, AbstractUserSearch)
+    AbstractPageView, AbstractProductRecord, AbstractUserProductView,
+    AbstractUserRecord, AbstractUserSearch, AbstractVisitor)
 from oscar.core.loading import is_model_registered
 
 __all__ = []
+
+
+if not is_model_registered('analytics', 'PageView'):
+    class PageView(AbstractPageView):
+        pass
+
+    __all__.append('PageView')
 
 
 if not is_model_registered('analytics', 'ProductRecord'):
@@ -32,3 +39,10 @@ if not is_model_registered('analytics', 'UserSearch'):
         pass
 
     __all__.append('UserSearch')
+
+
+if not is_model_registered('analytics', 'Visitor'):
+    class Visitor(AbstractVisitor):
+        pass
+
+    __all__.append('Visitor')

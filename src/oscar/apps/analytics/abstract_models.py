@@ -1,9 +1,65 @@
+import uuid
+import logging
+
 from decimal import Decimal
 
 from django.db import models
+from django.conf import settings
+from django.utils import timezone
+from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
+from django.contrib.postgres.fields import JSONField
+
 from oscar.core.compat import AUTH_USER_MODEL
+from oscar.core.loading import get_class
+
+
+
+try:
+    from django.contrib.gis.geoip2 import (
+        HAS_GEOIP2 as HAS_GEOIP,
+        GeoIP2 as GeoIP,
+        GeoIP2Exception as GeoIPException,
+    )
+except ImportError:
+    HAS_GEOIP = False
+
+try:
+    from ua_parser import user_agent_parser
+    HAS_UAPARSER = True
+except ImportError:
+    HAS_UAPARSER = False
+
+
+log = logging.getLogger('django')
+
+GEOIP_CACHE_TYPE = settings.GEOIP_CACHE_TYPE
+PageViewManager = get_class('analytics.managers', 'PageViewManager')
+VisitorManager = get_class('analytics.managers', 'VisitorManager')
+
+
+class AbstractPageView(models.Model):
+    """ Taken directly from django-tracking2
+
+    """
+    visitor = models.ForeignKey(
+        'analytics.Visitor',
+        related_name='pageviews',
+        on_delete=models.CASCADE,
+    )
+    url = models.TextField(null=False, editable=False)
+    referer = models.TextField(null=True, editable=False)
+    query_string = models.TextField(null=True, editable=False)
+    method = models.CharField(max_length=20, null=True)
+    view_time = models.DateTimeField()
+
+    objects = PageViewManager()
+
+    class Meta:
+        abstract = True
+        app_label = 'analytics'
+        ordering = ('-view_time',)
 
 
 class AbstractProductRecord(models.Model):
@@ -115,3 +171,87 @@ class AbstractUserSearch(models.Model):
         return _("%(user)s searched for '%(query)s'") % {
             'user': self.user,
             'query': self.query}
+
+
+class AbstractVisitor(models.Model):
+    """ Taken directly from django-tracking2
+
+    """
+    # Unique session
+    session_key = models.CharField(max_length=40, primary_key=True)
+
+    # The visitor
+    identity = models.UUIDField(default=uuid.uuid4, editable=False)
+
+    # User
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name='visit_history',
+        null=True,
+        editable=False,
+        on_delete=models.CASCADE,
+    )
+    # Update to GenericIPAddress in Django 1.4
+    ip_address = models.GenericIPAddressField(editable=False)
+    user_agent = models.TextField(null=True, editable=False)
+    start_time = models.DateTimeField(default=timezone.now, editable=False)
+    expiry_age = models.IntegerField(null=True, editable=False)
+    expiry_time = models.DateTimeField(null=True, editable=False)
+    time_on_site = models.IntegerField(null=True, editable=False)
+    end_time = models.DateTimeField(null=True, editable=False)
+    data = JSONField(null=True)
+
+    objects = VisitorManager()
+
+    def session_expired(self):
+        """The session has ended due to session expiration."""
+        if self.expiry_time:
+            return self.expiry_time <= timezone.now()
+        return False
+    session_expired.boolean = True
+
+    def session_ended(self):
+        """The session has ended due to an explicit logout."""
+        return bool(self.end_time)
+    session_ended.boolean = True
+
+    def save(self, *args, **kwargs):
+        """ Load data when created """
+        if not self.data:
+            data = self.ua_data or {}
+            data['geo'] = self.geoip_data or {}
+            self.data = data
+        super().save(*args, **kwargs)
+
+    @cached_property
+    def geoip_data(self):
+        """Attempt to retrieve MaxMind GeoIP data based on visitor's IP."""
+        if not HAS_GEOIP or not settings.TRACK_USING_GEOIP:
+            return
+        try:
+            gip = GeoIP(cache=GEOIP_CACHE_TYPE)
+            return gip.city(self.ip_address)
+        except GeoIPException:
+            msg = 'Error getting GeoIP data for IP "{0}"'.format(
+                self.ip_address)
+            log.exception(msg)
+
+    @cached_property
+    def ua_data(self):
+        if not HAS_UAPARSER or not self.user_agent:
+            return
+        try:
+            ua_data = user_agent_parser.Parse(self.user_agent)
+            return ua_data
+        except Exception:
+            msg = 'Error parsing UA string "%s"' % self.user_agent
+            log.exception(msg)
+
+
+    class Meta:
+        abstract = True
+        app_label = 'analytics'
+        ordering = ('-expiry_time',)
+        permissions = (
+            ('visitor_log', 'Can view visitor'),
+        )

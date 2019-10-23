@@ -249,7 +249,7 @@ OSCAR_SEARCH_FACETS = {
     'fields': OrderedDict([
         # The key for these dicts will be used when passing facet data
         # to the template. Same for the 'queries' dict below.
-        ('product_class', {'name': _('Type'), 'field': 'product_class'}),
+        ('product_class', {'name': _('Type'), 'field': 'productNone_class'}),
         ('rating', {'name': _('Rating'), 'field': 'rating'}),
         # You can specify an 'options' element that will be passed to the
         # SearchQuerySet.facet() call.
@@ -290,3 +290,23 @@ STRIPE_CONNECT_REDIRECT_URL = '/api/partner/connect/'
 STRIPE_CONNECT_URL = 'https://connect.stripe.com/express/oauth/authorize'
 STRIPE_PUBLIC_KEY = os.environ.get('STRIPE_PUBLIC_KEY')
 STRIPE_PRIVATE_KEY = os.environ.get('STRIPE_PRIVATE_KEY')
+
+# Tracking
+TRACK_VISITOR_COOKIE_LIFETIME = 5 * 365 * 24 * 60 * 60
+TRACK_VISITOR_COOKIE_NAME = 'oscar_award'
+TRACK_VISITOR_COOKIE_SECURE = False
+TRACK_AJAX_REQUESTS = True
+TRACK_ANONYMOUS_USERS = True
+TRACK_SUPERUSERS = False
+TRACK_PAGEVIEWS = True
+TRACK_IGNORE_URLS = [
+    r'^(favicon\.ico|robots\.txt)$',
+]
+
+TRACK_IGNORE_USER_AGENTS = []
+TRACK_IGNORE_STATUS_CODES = []
+TRACK_USING_GEOIP = False
+TRACK_REFERER = True
+TRACK_QUERY_STRING = True
+
+GEOIP_CACHE_TYPE = 4

@@ -94,6 +94,8 @@ class ReportsGroup(DashboardAdminGroup):
             get_class('dashboard.reports.admin', 'ProductAnalyticsAdmin'),
             get_class('dashboard.reports.admin', 'CustomerAnalyticsAdmin'),
             get_class('dashboard.reports.admin', 'SearchesAdmin'),
+            get_class('dashboard.reports.admin', 'VisitorAdmin'),
+            get_class('dashboard.reports.admin', 'PageViewAdmin'),
         )
 
 
