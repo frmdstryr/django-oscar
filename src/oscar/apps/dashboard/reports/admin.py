@@ -176,7 +176,7 @@ class VisitorAdmin(DashboardAdmin):
         if not code:
             return u''
         OFFSET = ord('🇦') - ord('A')
-        points = map(lambda x: ord(x) + OFFSET, code.upper())
+        points = tuple(map(lambda x: ord(x) + OFFSET, code.upper()))
         try:
             return chr(points[0]) + chr(points[1])
         except ValueError:
