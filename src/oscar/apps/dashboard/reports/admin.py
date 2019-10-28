@@ -96,19 +96,38 @@ class SearchesAdmin(IndexOnlyAdmin):
     list_display = ('user', 'query', 'result_count', 'date_created')
 
 
-class VisitorAdmin(IndexOnlyAdmin):
+class VisitorAdmin(DashboardAdmin):
     model = Visitor
     menu_label = _('Visitor Analytics')
     menu_icon = 'line-chart'
-    search_fields = ('ip_address', 'session_key')
+    inspect_view_enabled = True
+    instance_views = ['inspect', 'delete']
+    restricted_actions = ['create', 'edit']
+    search_fields = ('ip_address', 'session_key', 'user_agent')
     list_filter = ('start_time',)
-    list_display = ('user', 'start_time',
-        '_time_on_site', 'ip_address', 'os', 'device', 'browser', 'location',
+    list_display = ('id', 'user', 'start_time',
+        '_time_on_site', 'ip', 'os', 'device', 'browser', 'location',
         'actions', 'landing_page', 'session_over')
+
+    excluded_params = ('p', 'o')
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        query = request.GET
+        excluded = self.excluded_params
+        for k, v in query.items():
+            if k not in excluded:
+                continue
+            qs = qs.filter({k: v})
+        return qs
 
     # =========================================================================
     # Display fields
     # =========================================================================
+    def id(self, obj):
+        label = str(obj.identity)[0:8]
+        url = self.get_visitor_url(identity=obj.identity)
+        return format_html('<a href="{}">{}</a>', url, label)
 
     def session_over(self, obj):
         return obj.session_ended() or obj.session_expired()
@@ -117,6 +136,10 @@ class VisitorAdmin(IndexOnlyAdmin):
     def _time_on_site(self, obj):
         if obj.time_on_site is not None:
             return timedelta(seconds=obj.time_on_site)
+
+    def ip(self, obj):
+        url = self.get_pageview_url(visitor__ip_address=obj.ip_address)
+        return format_html('<a href="{}">{}</a>', url, obj.ip_address)
 
     def landing_page(self, obj):
         visit = obj.pageviews.last()
@@ -127,14 +150,27 @@ class VisitorAdmin(IndexOnlyAdmin):
             return ''
         dev = obj.data['device']
         if dev.get('brand'):
-            return '{brand} {model}'.format(**dev)
-        return dev.get('family', '')
+            brand = dev.get('brand')
+            model = dev.get('model')
+            label = '{brand} {model}'.format(**dev)
+            filters = {}
+            if brand:
+                filters['visitor__data__device__brand'] = brand
+            if model:
+                filters['visitor__data__device__model'] = model
+        else:
+            label = dev.get('family', '')
+            filters = {'visitor__data__device__family': label}
+        url = self.get_pageview_url(**filters)
+        return format_html('<a href="{}">{}</a>', url, label)
 
     def os(self, obj):
         if not obj.data or 'os' not in obj.data:
             return ''
         os_data = obj.data['os']
-        return '{family}'.format(**os_data)
+        family = os_data['family']
+        url = self.get_pageview_url(visitor__data__os__family=family)
+        return format_html('<a href="{}">{}</a>', url, family)
 
     def flag(self, code):
         if not code:
@@ -150,7 +186,9 @@ class VisitorAdmin(IndexOnlyAdmin):
         if not obj.data or 'user_agent' not in obj.data:
             return ''
         ua_data = obj.data['user_agent']
-        return '{family}'.format(**ua_data)
+        family = ua_data['family']
+        url = self.get_pageview_url(visitor__data__user_agent__family=family)
+        return format_html('<a href="{}">{}</a>', url, family)
 
     def location(self, obj):
         if not obj.data or 'geo' not in obj.data:
@@ -176,6 +214,12 @@ class VisitorAdmin(IndexOnlyAdmin):
         PageViewAdmin = get_class('dashboard.reports.admin', 'PageViewAdmin')
         return PageViewAdmin.instance()
 
+    def get_visitor_url(self, **query):
+        url = self.get_action_url('index')
+        if query:
+            url += "?" + "&".join(["%s=%s"% it for it in query.items()])
+        return url
+
     def get_pageview_url(self, **query):
         url = self.pageview_admin.get_action_url('index')
         if query:
@@ -188,12 +232,23 @@ class PageViewAdmin(IndexOnlyAdmin):
     menu_label = _('Page Analytics')
     menu_icon = 'area-chart'
     search_fields = ('visitor__session_key', )
-    list_display = ('visitor', 'url', 'view_time')
+    list_display = ('visitor', 'path', 'view_time')
+    excluded_params = ('p', 'o')
+
+    def path(self, obj):
+        url = obj.url
+        if obj.query_string:
+            url += "?" + obj.query_string
+        return format_html('<a href="{}" target="_blank">{}</a>', url, url)
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        if request.GET.get('visitor'):
-            qs = qs.filter(visitor=request.GET.get('visitor'))
+        query = request.GET
+        excluded = self.excluded_params
+        for k, v in query.items():
+            if k not in excluded:
+                continue
+            qs = qs.filter({k: v})
         return qs
 
 
