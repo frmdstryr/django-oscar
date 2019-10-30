@@ -236,7 +236,7 @@ class AbstractVisitor(models.Model):
         try:
             gip = GeoIP(cache=GEOIP_CACHE_TYPE)
             return gip.city(self.ip_address)
-        except GeoIPException:
+        except Exception:
             msg = 'Error getting GeoIP data for IP "{0}"'.format(
                 self.ip_address)
             log.exception(msg)
