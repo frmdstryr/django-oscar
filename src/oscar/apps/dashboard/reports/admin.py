@@ -104,10 +104,10 @@ class VisitorAdmin(DashboardAdmin):
     instance_views = ['inspect', 'delete']
     restricted_actions = ['create', 'edit']
     search_fields = ('ip_address', 'session_key', 'user_agent')
-    list_filter = ('start_time',)
+    list_filter = ('start_time', 'is_bot')
     list_display = ('id', 'user', 'start_time',
-        '_time_on_site', 'ip', 'os', 'device', 'browser', 'location',
-        'actions', 'landing_page', 'session_over')
+        '_time_on_site', 'client', 'device', 'location',
+        'actions', 'landing_page')
 
     excluded_params = ('p', 'o')
 
@@ -137,40 +137,59 @@ class VisitorAdmin(DashboardAdmin):
         if obj.time_on_site is not None:
             return timedelta(seconds=obj.time_on_site)
 
-    def ip(self, obj):
+    def client(self, obj):
         url = self.get_pageview_url(visitor__ip_address=obj.ip_address)
-        return format_html('<a href="{}">{}</a>', url, obj.ip_address)
+        reverse_ip = obj.reverse_lookup()
+        return format_html(
+            '<a href="{}">{}</a></br><span>{}</span>',
+            url, obj.ip_address, reverse_ip)
 
     def landing_page(self, obj):
         visit = obj.pageviews.last()
         return format_html('<a href="{}">{}</a>', visit.url, visit.url)
 
     def device(self, obj):
-        if not obj.data or 'device' not in obj.data:
+        data = obj.data
+        if not data:
             return ''
-        dev = obj.data['device']
-        if dev.get('brand'):
-            brand = dev.get('brand')
-            model = dev.get('model')
-            label = '{brand} {model}'.format(**dev)
-            filters = {}
-            if brand:
-                filters['visitor__data__device__brand'] = brand
-            if model:
-                filters['visitor__data__device__model'] = model
-        else:
-            label = dev.get('family', '')
-            filters = {'visitor__data__device__family': label}
-        url = self.get_pageview_url(**filters)
-        return format_html('<a href="{}">{}</a>', url, label)
 
-    def os(self, obj):
-        if not obj.data or 'os' not in obj.data:
+        template = []
+        params = []
+        dev = data.get('device')
+        if dev:
+            template.append('Device: <a href="{}">{}</a>')
+            if dev.get('brand'):
+                brand = dev.get('brand')
+                model = dev.get('model')
+                label = '{brand} {model}'.format(**dev)
+                filters = {}
+                if brand:
+                    filters['visitor__data__device__brand'] = brand
+                if model:
+                    filters['visitor__data__device__model'] = model
+            else:
+                label = dev.get('family', '')
+                filters = {'visitor__data__device__family': label}
+            url = self.get_pageview_url(**filters)
+            params.extend((url, label))
+        os_data = data.get('os')
+        if os_data:
+            template.append('OS: <a href="{}">{}</a>')
+            label = os_data.get('family', '')
+            url = self.get_pageview_url(visitor__data__os__family=label)
+            params.extend((url, label))
+
+        browser = data.get('user_agent')
+        if browser:
+            template.append('Browser: <a href="{}">{}</a>')
+            label = browser.get('family', '')
+            url = self.get_pageview_url(
+                visitor__data__user_agent__family=label)
+            params.extend((url, label))
+        if not template:
             return ''
-        os_data = obj.data['os']
-        family = os_data['family']
-        url = self.get_pageview_url(visitor__data__os__family=family)
-        return format_html('<a href="{}">{}</a>', url, family)
+
+        return format_html('</br>'.join(template), *params)
 
     def flag(self, code):
         if not code:
@@ -181,14 +200,6 @@ class VisitorAdmin(DashboardAdmin):
             return chr(points[0]) + chr(points[1])
         except ValueError:
             return ('\\U%08x\\U%08x' % tuple(points)).decode('unicode-escape')
-
-    def browser(self, obj):
-        if not obj.data or 'user_agent' not in obj.data:
-            return ''
-        ua_data = obj.data['user_agent']
-        family = ua_data['family']
-        url = self.get_pageview_url(visitor__data__user_agent__family=family)
-        return format_html('<a href="{}">{}</a>', url, family)
 
     def location(self, obj):
         if not obj.data or 'geo' not in obj.data:

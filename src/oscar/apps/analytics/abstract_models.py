@@ -1,5 +1,6 @@
 import uuid
 import logging
+import socket
 
 from decimal import Decimal
 
@@ -199,6 +200,8 @@ class AbstractVisitor(models.Model):
     expiry_time = models.DateTimeField(null=True, editable=False)
     time_on_site = models.IntegerField(null=True, editable=False)
     end_time = models.DateTimeField(null=True, editable=False)
+    hostname = models.CharField(max_length=256, default="")
+    is_bot = models.BooleanField(default=False)
     data = JSONField(null=True)
 
     objects = VisitorManager()
@@ -221,6 +224,7 @@ class AbstractVisitor(models.Model):
             data = self.ua_data or {}
             data['geo'] = self.geoip_data or {}
             self.data = data
+
         super().save(*args, **kwargs)
 
     @cached_property
@@ -246,6 +250,15 @@ class AbstractVisitor(models.Model):
         except Exception:
             msg = 'Error parsing UA string "%s"' % self.user_agent
             log.exception(msg)
+
+    def reverse_lookup(self):
+        if not self.hostname:
+            try:
+                fqdn, _, _ = socket.gethostbyaddr(self.ip_address)
+                self.hostname = fqdn
+            except Exception as e:
+                pass
+        return self.hostname
 
 
     class Meta:
