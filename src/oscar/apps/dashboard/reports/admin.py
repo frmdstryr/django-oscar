@@ -139,10 +139,9 @@ class VisitorAdmin(DashboardAdmin):
 
     def client(self, obj):
         url = self.get_pageview_url(visitor__ip_address=obj.ip_address)
-        reverse_ip = obj.reverse_lookup()
         return format_html(
             '<a href="{}">{}</a></br><span>{}</span>',
-            url, obj.ip_address, reverse_ip)
+            url, obj.ip_address, obj.hostname)
 
     def landing_page(self, obj):
         visit = obj.pageviews.last()
@@ -243,7 +242,7 @@ class PageViewAdmin(IndexOnlyAdmin):
     menu_label = _('Page Analytics')
     menu_icon = 'area-chart'
     search_fields = ('visitor__session_key', )
-    list_display = ('visitor', 'path', 'view_time')
+    list_display = ('session', 'path', 'referer', 'view_time')
     excluded_params = ('p', 'o')
 
     def path(self, obj):
@@ -251,6 +250,25 @@ class PageViewAdmin(IndexOnlyAdmin):
         if obj.query_string:
             url += "?" + obj.query_string
         return format_html('<a href="{}" target="_blank">{}</a>', url, url)
+
+    def session(self, obj):
+        visitor = obj.visitor
+        url = self.get_visitor_url(session_key=visitor.session_key)
+        return format_html('<a href="{}">{}</a>', url, visitor.session_key[:8])
+
+    # =========================================================================
+    # Extra methods
+    # =========================================================================
+    @cached_property
+    def visitor_admin(self):
+        VisitorAdmin = get_class('dashboard.reports.admin', 'VisitorAdmin')
+        return VisitorAdmin.instance()
+
+    def get_visitor_url(self, **query):
+        url = self.visitor_admin.get_action_url('index')
+        if query:
+            url += "?" + "&".join(["%s=%s"% it for it in query.items()])
+        return url
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
