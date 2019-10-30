@@ -118,7 +118,7 @@ class VisitorAdmin(DashboardAdmin):
         for k, v in query.items():
             if k in excluded:
                 continue
-            qs = qs.filter({k: v})
+            qs = qs.filter(**{k: v})
         return qs
 
     # =========================================================================
@@ -259,7 +259,7 @@ class PageViewAdmin(IndexOnlyAdmin):
         for k, v in query.items():
             if k in excluded:
                 continue
-            qs = qs.filter({k: v})
+            qs = qs.filter(**{k: v})
         return qs
 
 
