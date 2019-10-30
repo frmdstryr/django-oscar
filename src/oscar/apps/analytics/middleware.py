@@ -37,7 +37,6 @@ def get_ip_address(request):
     for header in IP_HEADERS:
         if request.META.get(header, None):
             ip = request.META[header].split(',')[0]
-
             try:
                 validate_ipv46_address(ip)
                 return ip

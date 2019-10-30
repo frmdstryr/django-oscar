@@ -106,7 +106,7 @@ class VisitorAdmin(DashboardAdmin):
     search_fields = ('ip_address', 'session_key', 'user_agent')
     list_filter = ('start_time', 'is_bot')
     list_display = ('id', 'user', 'start_time',
-        '_time_on_site', 'client', 'device', 'location',
+        '_time_on_site', 'client', 'device', 'location', 'is_bot',
         'actions', 'landing_page')
 
     excluded_params = ('p', 'o')
@@ -116,7 +116,7 @@ class VisitorAdmin(DashboardAdmin):
         query = request.GET
         excluded = self.excluded_params
         for k, v in query.items():
-            if k not in excluded:
+            if k in excluded:
                 continue
             qs = qs.filter({k: v})
         return qs
@@ -257,7 +257,7 @@ class PageViewAdmin(IndexOnlyAdmin):
         query = request.GET
         excluded = self.excluded_params
         for k, v in query.items():
-            if k not in excluded:
+            if k in excluded:
                 continue
             qs = qs.filter({k: v})
         return qs

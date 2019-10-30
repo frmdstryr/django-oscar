@@ -224,6 +224,7 @@ class AbstractVisitor(models.Model):
             data = self.ua_data or {}
             data['geo'] = self.geoip_data or {}
             self.data = data
+            self.is_bot = self.detect_bot()
 
         super().save(*args, **kwargs)
 
@@ -251,11 +252,21 @@ class AbstractVisitor(models.Model):
             msg = 'Error parsing UA string "%s"' % self.user_agent
             log.exception(msg)
 
+    def detect_bot(self):
+        """ Attempt to determine if this visitor is a bot """
+        user_agent = self.user_agent.lower()
+        for pattern in ('bot', 'python', 'headless', 'crawl'):
+            if pattern in user_agent:
+                return True
+        return False
+
     def reverse_lookup(self):
         if not self.hostname:
             try:
                 fqdn, _, _ = socket.gethostbyaddr(self.ip_address)
                 self.hostname = fqdn
+                self.is_bot = self.detect_bot()
+                self.save()
             except Exception as e:
                 pass
         return self.hostname
