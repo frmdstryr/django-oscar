@@ -1,3 +1,4 @@
+import uuid
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Count, Sum
@@ -10,6 +11,7 @@ from oscar.core import validators
 from oscar.core.compat import AUTH_USER_MODEL
 from oscar.core.loading import get_class
 
+from wagtail.core.models import Orderable
 from modelcluster.fields import ParentalKey
 from modelcluster.models import ClusterableModel
 
@@ -23,6 +25,9 @@ class AbstractProductReview(ClusterableModel):
 
     Reviews can belong to a user or be anonymous.
     """
+
+    # Unique ID to associate images before the review exists
+    uuid = models.UUIDField(null=True, default=uuid.uuid4)
 
     product = ParentalKey(
         'catalogue.Product', related_name='reviews', null=True,
@@ -77,7 +82,7 @@ class AbstractProductReview(ClusterableModel):
     class Meta:
         abstract = True
         app_label = 'reviews'
-        ordering = ['-delta_votes', 'id']
+        ordering = ['-delta_votes', 'date_created']
         unique_together = (('product', 'user'),)
         verbose_name = _('Product review')
         verbose_name_plural = _('Product reviews')
@@ -155,8 +160,13 @@ class AbstractProductReview(ClusterableModel):
         else:
             return self.name
 
-    # Helpers
+    @property
+    def thumbnail_image(self):
+        review_image = self.images.all().first()
+        if review_image:
+            return review_image.image
 
+    # Helpers
     def update_totals(self):
         """
         Update total and delta votes
@@ -180,6 +190,31 @@ class AbstractProductReview(ClusterableModel):
         except ValidationError as e:
             return False, "%s" % e
         return True, ""
+
+
+class AbstractProductReviewImage(Orderable):
+    """
+    An image associated with a review of a product
+    """
+    review = ParentalKey(
+        'reviews.ProductReview',
+        on_delete=models.CASCADE,
+        related_name='images',
+        verbose_name=_("Review"))
+    image = models.ForeignKey(
+        'images.OscarImage',
+        on_delete=models.CASCADE,
+        related_name='reviews',
+        verbose_name=_("Image"))
+
+    class Meta:
+        abstract = True
+        app_label = 'reviews'
+        # Any custom models should ensure that this ordering is unchanged, or
+        # your query count will explode. See AbstractProduct.primary_image.
+        ordering = ['sort_order']
+        verbose_name = _('Review image')
+        verbose_name_plural = _('Review images')
 
 
 class AbstractVote(models.Model):

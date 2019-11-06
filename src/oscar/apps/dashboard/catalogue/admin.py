@@ -297,19 +297,38 @@ class AddToCartOptionGroupAdmin(DashboardAdmin):
     list_display = ('name', 'option_summary')
 
 
-class ProductReviewAdmin(DashboardAdmin):
+class ProductReviewAdmin(DashboardAdmin, ThumbnailMixin):
     model = ProductReview
     dashboard_url = 'reviews'
     menu_label = _('Reviews')
     menu_icon = 'comments'
-    list_display = ('product', 'title', 'body', 'score', 'total_votes',
-                    'reviewer_name', 'status', 'date_created')
+    list_display = ('product', 'title', 'body', 'images', 'score',
+                    'total_votes', 'reviewer_name', 'status', 'date_created')
     list_filter = ('score', 'status')
     search_fields = ('title', 'product__title', 'body')
     inspect_view_enabled = True
     restricted_actions = ('create', 'delete', 'edit')
     bulk_actions = ['mark_approved', 'mark_rejected']
 
+    thumb_col_header_text = _('Image')
+    thumb_image_field_name = 'thumbnail_image'
+
+    # =========================================================================
+    # Display fields
+    # =========================================================================
+    def images(self, obj):
+        # Wrap the thumbnail in a link to the collection
+        img = ThumbnailMixin.admin_thumb(self, obj)
+        if not img:
+            return ''
+        url = reverse('wagtailimages:index')
+        id = obj.thumbnail_image.collection.id
+        template = '<a href="{}?collection_id={}" target="_blank">{}</a>'
+        return format_html(template, url, id, img)
+
+    # =========================================================================
+    # Bulk actions
+    # =========================================================================
     def do_bulk_action_mark_approved(self, request, form):
         queryset = form.cleaned_data['selection']
         result = queryset.filter(status=ProductReview.FOR_MODERATION).update(

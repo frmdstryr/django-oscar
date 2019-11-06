@@ -1,15 +1,24 @@
+from uuid import uuid4
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from oscar.core.loading import get_model
 
-Vote = get_model('reviews', 'vote')
-ProductReview = get_model('reviews', 'productreview')
+
+from wagtail.core.models import Collection
+from wagtail.images.fields import WagtailImageField
+
+
+Vote = get_model('reviews', 'Vote')
+ProductReview = get_model('reviews', 'ProductReview')
+OscarImage = get_model('images', 'OscarImage')
 
 
 class ProductReviewForm(forms.ModelForm):
     name = forms.CharField(label=_('Name'), required=True)
     email = forms.EmailField(label=_('Email'), required=True)
+
+    uuid = forms.UUIDField(widget=forms.HiddenInput(), required=True)
 
     def __init__(self, product, user=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -18,10 +27,22 @@ class ProductReviewForm(forms.ModelForm):
             self.instance.user = user
             del self.fields['name']
             del self.fields['email']
+        self.fields['uuid'].initial = self.instance.uuid
 
     class Meta:
         model = ProductReview
-        fields = ('title', 'score', 'body', 'name', 'email')
+        fields = ('title', 'score', 'body', 'name', 'email', 'uuid')
+
+
+class ReviewImageForm(forms.ModelForm):
+    #: Must match the UUID from the product review
+    uuid = forms.CharField(widget=forms.HiddenInput(), required=True)
+    file = WagtailImageField(required=True)
+
+    class Meta:
+        model = OscarImage
+        fields = ('file',)
+
 
 
 class VoteForm(forms.ModelForm):

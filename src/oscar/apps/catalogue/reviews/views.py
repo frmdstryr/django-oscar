@@ -1,19 +1,27 @@
 from django.conf import settings
 from django.contrib import messages
+from django.http import JsonResponse, HttpResponse, HttpResponseNotFound
 from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import CreateView, DetailView, ListView, View
+
+from wagtail.core.models import Collection
+from wagtail.images.models import Filter
 
 from oscar.apps.catalogue.reviews.signals import review_added
 from oscar.core.loading import get_classes, get_model
 from oscar.core.utils import redirect_to_referrer
 
-ProductReviewForm, VoteForm, SortReviewsForm = get_classes(
+ProductReviewForm, VoteForm, SortReviewsForm, ReviewImageForm = get_classes(
     'catalogue.reviews.forms',
-    ['ProductReviewForm', 'VoteForm', 'SortReviewsForm'])
+    ['ProductReviewForm', 'VoteForm', 'SortReviewsForm', 'ReviewImageForm'])
+
 
 Vote = get_model('reviews', 'vote')
 ProductReview = get_model('reviews', 'ProductReview')
+ProductReviewImage = get_model('reviews', 'ProductReviewImage')
+OscarImage = get_model('images', 'OscarImage')
 Product = get_model('catalogue', 'product')
 
 
@@ -23,6 +31,7 @@ class CreateProductReview(CreateView):
     product_model = Product
     form_class = ProductReviewForm
     view_signal = review_added
+    max_images = 3
 
     def dispatch(self, request, *args, **kwargs):
         self.product = get_object_or_404(
@@ -42,6 +51,7 @@ class CreateProductReview(CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['product'] = self.product
+        context['max_images'] = range(self.max_images)
         return context
 
     def get_form_kwargs(self):
@@ -52,17 +62,110 @@ class CreateProductReview(CreateView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
+
+        # Associate any images uploaded with this uuid to the review
+        review = form.instance
+        root, created = Collection.objects.get_or_create(name="Reviews")
+        try:
+            collection = root.get_children().get(name=review.uuid)
+            for image in OscarImage.objects.filter(
+                    collection=collection)[:self.max_images]:
+                ProductReviewImage.objects.create(review=review, image=image)
+        except Collection.DoesNotExist:
+            pass
+
         self.send_signal(self.request, response, self.object)
+        msg = "Thank you for reviewing this product!"
+        if settings.OSCAR_MODERATE_REVIEWS:
+            msg += " Your review will be available after approval."
+        messages.success(self.request, _(msg))
         return response
 
     def get_success_url(self):
-        messages.success(
-            self.request, _("Thank you for reviewing this product"))
         return self.product.get_absolute_url()
 
     def send_signal(self, request, response, review):
         self.view_signal.send(sender=self, review=review, user=request.user,
                               request=request, response=response)
+
+
+class UploadImagePreview(View):
+    """ Preview a review image
+
+    """
+    def get(self, request, product_slug, product_pk, collection, image_id):
+        image = get_object_or_404(
+            OscarImage, id=image_id, collection__name=collection)
+
+        if image.collection.get_parent().name != 'Reviews':
+            raise HttpResponseNotFound()  # Not allowed to access this
+
+        response = HttpResponse()
+        image = Filter(spec='fill-320x320').run(image, response)
+        response['Content-Type'] = 'image/' + image.format_name
+        return response
+
+
+class UploadImageDelete(View):
+    """ Remove the image
+
+    """
+    def post(self, request, product_slug, product_pk, collection, image_id):
+        image = get_object_or_404(
+            OscarImage, id=image_id, collection__name=collection)
+        if image.collection.get_parent().name != 'Reviews':
+            raise HttpResponseNotFound()  # Not allowed to access this
+        if ProductReview.objects.filter(uuid=collection).exists():
+            raise HttpResponseNotFound()  # Can't delete anymore
+        image.delete()
+        return JsonResponse({'status': 'OK'})
+
+
+class UploadImageView(View):
+    """
+    API to upload an image. This is done before the review is saved so
+    """
+    def post(self, request, product_slug, product_pk, *args, **kwargs):
+        image = OscarImage(uploaded_by_user=request.user)
+        form = ReviewImageForm(request.POST, request.FILES, instance=image)
+        if not form.is_valid():
+            return JsonResponse({
+                'status': 'Invalid Request',
+                'errors': form.errors,
+            })
+
+        # Cannot upload to existing reviews
+        review_uuid = form.cleaned_data['uuid']
+        if ProductReview.objects.filter(uuid=review_uuid).exists():
+            return JsonResponse({
+                'status': 'Invalid Request',
+            })
+
+        # Add it to a collection for this review
+        root, created = Collection.objects.get_or_create(name="Reviews")
+        try:
+            collection = root.get_children().get(name=review_uuid)
+        except Collection.DoesNotExist:
+            collection = root.add_child(name=review_uuid)
+        image.collection = collection
+
+         # Set image file size
+        image.file_size = image.file.size
+
+        # Set image file hash
+        image.file.seek(0)
+        image._set_file_hash(image.file.read())
+        image.file.seek(0)
+        form.save()
+        thumbnail_url = reverse('catalogue:reviews-preview-image',
+                      args=(product_slug, product_pk, review_uuid, image.id))
+        delete_url = reverse('catalogue:reviews-delete-image',
+                      args=(product_slug, product_pk, review_uuid, image.id))
+        return JsonResponse({
+            'status': 'OK',
+            'thumbnail_url': thumbnail_url,
+            'delete_url': delete_url
+        })
 
 
 class ProductReviewDetail(DetailView):

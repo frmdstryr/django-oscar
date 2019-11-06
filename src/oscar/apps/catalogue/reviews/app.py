@@ -1,4 +1,4 @@
-from django.conf.urls import url
+from django.urls import path
 from django.contrib.auth.decorators import login_required
 
 from oscar.core.application import Application
@@ -11,19 +11,30 @@ class ProductReviewsApplication(Application):
 
     detail_view = get_class('catalogue.reviews.views', 'ProductReviewDetail')
     create_view = get_class('catalogue.reviews.views', 'CreateProductReview')
+    preview_view = get_class('catalogue.reviews.views', 'UploadImagePreview')
+    remove_view = get_class('catalogue.reviews.views', 'UploadImageDelete')
+    upload_view = get_class('catalogue.reviews.views', 'UploadImageView')
     vote_view = get_class('catalogue.reviews.views', 'AddVoteView')
     list_view = get_class('catalogue.reviews.views', 'ProductReviewList')
 
     def get_urls(self):
         urls = [
-            url(r'^(?P<pk>\d+)/$', self.detail_view.as_view(),
+            path(r'<int:pk>/', self.detail_view.as_view(),
                 name='reviews-detail'),
-            url(r'^add/$', self.create_view.as_view(),
+            path(r'add/', self.create_view.as_view(),
                 name='reviews-add'),
-            url(r'^(?P<pk>\d+)/vote/$',
+            path(r'add/image/', self.upload_view.as_view(),
+                name='reviews-add-image'),
+            path(r'add/image/<uuid:collection>/<int:image_id>/preview/',
+                 self.preview_view.as_view(),
+                 name='reviews-preview-image'),
+            path(r'add/image/<uuid:collection>/<int:image_id>/remove/',
+                 self.remove_view.as_view(),
+                 name='reviews-delete-image'),
+            path(r'/<int:pk>/vote/',
                 login_required(self.vote_view.as_view()),
                 name='reviews-vote'),
-            url(r'^$', self.list_view.as_view(), name='reviews-list'),
+            path('/', self.list_view.as_view(), name='reviews-list'),
         ]
         return self.post_process_urls(urls)
 
