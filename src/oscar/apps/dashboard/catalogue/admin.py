@@ -302,20 +302,29 @@ class ProductReviewAdmin(DashboardAdmin, ThumbnailMixin):
     dashboard_url = 'reviews'
     menu_label = _('Reviews')
     menu_icon = 'comments'
-    list_display = ('product', 'title', 'body', 'images', 'score',
+    list_display = ('product_', 'title', 'body', 'images', 'score',
                     'total_votes', 'reviewer_name', 'status', 'date_created')
     list_filter = ('score', 'status')
     search_fields = ('title', 'product__title', 'body')
     inspect_view_enabled = True
     restricted_actions = ('create', 'delete', 'edit')
-    bulk_actions = ['mark_approved', 'mark_rejected']
+    bulk_actions = ['mark_approved', 'mark_rejected', 'update_ratings']
 
     thumb_col_header_text = _('Image')
     thumb_image_field_name = 'thumbnail_image'
 
+    ordering = ('-date_created', )
+
     # =========================================================================
     # Display fields
     # =========================================================================
+    def product_(self, obj):
+        product = obj.product
+        if not product:
+            return ""
+        url = product.get_absolute_url()
+        return format_html('<a href="{}" target="_blank">{}</a>', url, product)
+
     def images(self, obj):
         # Wrap the thumbnail in a link to the collection
         img = ThumbnailMixin.admin_thumb(self, obj)
@@ -334,9 +343,25 @@ class ProductReviewAdmin(DashboardAdmin, ThumbnailMixin):
         result = queryset.filter(status=ProductReview.FOR_MODERATION).update(
             status=ProductReview.APPROVED)
         messages.success(request, _('%s reviews marked as approved' % result))
+        self.do_bulk_action_update_product_ratings(request, form)
 
     def do_bulk_action_mark_rejected(self, request, form):
         queryset = form.cleaned_data['selection']
         result = queryset.filter(status=ProductReview.FOR_MODERATION).update(
             status=ProductReview.REJECTED)
         messages.success(request, _('%s reviews marked as rejected' % result))
+        self.do_bulk_action_update_product_ratings(request, form)
+
+    def do_bulk_action_update_product_ratings(self, request, form):
+        queryset = form.cleaned_data['selection']
+        count = 0
+        for review in queryset:
+            if not review.product:
+                continue
+            count += 1
+            review.product.update_rating()
+        if count:
+            messages.success(request, _('%s product ratings updated' % count))
+
+
+
