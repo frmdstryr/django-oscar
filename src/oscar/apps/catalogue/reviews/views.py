@@ -25,6 +25,17 @@ OscarImage = get_model('images', 'OscarImage')
 Product = get_model('catalogue', 'product')
 
 
+def get_reviews_collection():
+    """ Get or create the Reviews collection
+
+    """
+    root = Collection.get_first_root_node()
+    try:
+        return root.get_children().get(name="Reviews")
+    except Collection.DoesNotExist:
+        return root.add_child(name="Reviews")
+
+
 class CreateProductReview(CreateView):
     template_name = "catalogue/reviews/review_form.html"
     model = ProductReview
@@ -65,9 +76,9 @@ class CreateProductReview(CreateView):
 
         # Associate any images uploaded with this uuid to the review
         review = form.instance
-        root, created = Collection.objects.get_or_create(name="Reviews")
+        reviews_collection = get_reviews_collection()
         try:
-            collection = root.get_children().get(name=review.uuid)
+            collection = reviews_collection.get_children().get(name=review.uuid)
             for image in OscarImage.objects.filter(
                     collection=collection)[:self.max_images]:
                 ProductReviewImage.objects.create(review=review, image=image)
@@ -97,7 +108,7 @@ class UploadImagePreview(View):
         image = get_object_or_404(
             OscarImage, id=image_id, collection__name=collection)
 
-        if image.collection.get_parent().name != 'Reviews':
+        if image.collection.get_parent() != get_reviews_collection():
             raise HttpResponseNotFound()  # Not allowed to access this
 
         response = HttpResponse()
@@ -113,7 +124,7 @@ class UploadImageDelete(View):
     def post(self, request, product_slug, product_pk, collection, image_id):
         image = get_object_or_404(
             OscarImage, id=image_id, collection__name=collection)
-        if image.collection.get_parent().name != 'Reviews':
+        if image.collection.get_parent() != get_reviews_collection():
             raise HttpResponseNotFound()  # Not allowed to access this
         if ProductReview.objects.filter(uuid=collection).exists():
             raise HttpResponseNotFound()  # Can't delete anymore
@@ -142,11 +153,11 @@ class UploadImageView(View):
             })
 
         # Add it to a collection for this review
-        root, created = Collection.objects.get_or_create(name="Reviews")
+        reviews_collection = get_reviews_collection()
         try:
-            collection = root.get_children().get(name=review_uuid)
+            collection = reviews_collection.get_children().get(name=review_uuid)
         except Collection.DoesNotExist:
-            collection = root.add_child(name=review_uuid)
+            collection = reviews_collection.add_child(name=review_uuid)
         image.collection = collection
 
          # Set image file size
