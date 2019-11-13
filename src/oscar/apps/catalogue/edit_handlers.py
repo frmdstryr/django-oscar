@@ -108,5 +108,5 @@ class ProductAttributesPanel(InlinePanel):
             empty_form.fields[ORDERING_FIELD_NAME].widget = forms.HiddenInput()
 
         self.empty_child = self.get_child_edit_handler()
-        self.empty_child = self.empty_child.bind_to_instance(
+        self.empty_child = self.empty_child.bind_to(
             instance=empty_form.instance, form=empty_form, request=self.request)
