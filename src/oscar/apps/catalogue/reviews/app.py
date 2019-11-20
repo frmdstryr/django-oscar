@@ -31,10 +31,10 @@ class ProductReviewsApplication(Application):
             path(r'add/image/<uuid:collection>/<int:image_id>/remove/',
                  self.remove_view.as_view(),
                  name='reviews-delete-image'),
-            path(r'/<int:pk>/vote/',
+            path(r'<int:pk>/vote/',
                 login_required(self.vote_view.as_view()),
                 name='reviews-vote'),
-            path('/', self.list_view.as_view(), name='reviews-list'),
+            path('', self.list_view.as_view(), name='reviews-list'),
         ]
         return self.post_process_urls(urls)
 
