@@ -138,6 +138,10 @@ class AbstractStockRecord(Orderable):
         _("Price (excl. tax)"), decimal_places=2, max_digits=12,
         blank=True, null=True)
 
+    @property
+    def price(self):
+        return self.price_excl_tax
+
     # Deprecated - will be removed in Oscar 2.0
     price_retail = models.DecimalField(
         _("Price (retail)"), decimal_places=2, max_digits=12,
