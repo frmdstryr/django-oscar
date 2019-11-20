@@ -1,5 +1,5 @@
 from django.utils.translation import gettext_lazy as _
-from oscar.core.loading import get_class, get_classes
+from oscar.core.loading import get_class, get_classes, feature_hidden
 
 from .base import DashboardAdminGroup
 
@@ -71,6 +71,8 @@ class ContentGroup(DashboardAdminGroup):
 
     @property
     def items(self):
+        if feature_hidden('pages'):
+            return []
         return get_classes('dashboard.pages.admin', (
             'PagesAdmin',
             'PagePromotionAdmin',
