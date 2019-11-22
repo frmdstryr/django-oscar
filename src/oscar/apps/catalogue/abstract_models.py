@@ -816,7 +816,8 @@ class AbstractProduct(ClusterableModel):
     @property
     def sorted_recommended_products(self):
         """Keeping order by recommendation ranking."""
-        return [r.recommendation for r in self.primary_recomendations.all()]
+        return [r.recommendation for r in self.primary_recomendations.filter(
+                recommendation__is_enabled=True)]
 
 
 class AbstractProductRecommendation(Orderable):
