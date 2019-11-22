@@ -11,10 +11,10 @@ td.modal-editor {
 td.modal-editor::after {
     font-family: wagtail;
     position: absolute;
-    content: "*";
+    content: "\e00f";
     top: 1em;
     right: 1em;
-    font-size: 1em;
+    font-size: 1.5em;
     color: #007d7e;
 }
 
