@@ -254,6 +254,8 @@ class AbstractVisitor(models.Model):
 
     def detect_bot(self):
         """ Attempt to determine if this visitor is a bot """
+        if self.user_agent is None:
+            return True
         user_agent = self.user_agent.lower()
         for pattern in ('bot', 'python', 'headless', 'crawl'):
             if pattern in user_agent:
