@@ -102,7 +102,7 @@ class BasketLineForm(forms.ModelForm):
         else:
             max_allowed_quantity = num_available or basket_max_allowed_quantity
         if max_allowed_quantity:
-            self.fields['quantity'].widget.attrs['max'] = max_allowed_quantity
+            self.fields['quantity'].widget.attrs['max'] = max(0, max_allowed_quantity)
 
     def clean_quantity(self):
         qty = self.cleaned_data['quantity']
