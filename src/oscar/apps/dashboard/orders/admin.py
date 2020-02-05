@@ -32,7 +32,8 @@ class OrderAdmin(DashboardAdmin):
     search_fields = (
         'number',
         'user__email', 'user__first_name', 'user__last_name',
-        'shipping_address__first_name', 'shipping_address__last_name')
+        'shipping_address__first_name', 'shipping_address__last_name',
+        'shipping_address__line4', 'shipping_address__phone_number')
 
     inspect_view_enabled = True
     inspect_view_class = get_class(
