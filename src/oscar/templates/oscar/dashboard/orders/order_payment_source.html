@@ -1,0 +1,40 @@
+{% load i18n modeladmin_tags currency_filters static %}
+<ul id="payment-source-{{source.id}}">
+    <li class="title">Source: <span>{{ source.source_type }}</span></li>
+    {% if source.reference %}<li>Reference: {{ source.reference }}</li>{% endif %}
+    {% if source.amount_allocated %}<li>Allocated: {{ source.amount_allocated|currency:order.currency }}</li>{% endif %}
+    {% if source.amount_debited %}<li>Debited: {{ source.amount_debited|currency:order.currency }}</li>{% endif %}
+    {% if source.amount_refunded %}<li>Refunded: {{ source.amount_refunded|currency:order.currency }}</li>{% endif %}
+    {% if source.transactions.exists %}
+        <li>
+            <h5>Transaction details</h5>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Reference</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for txn in source.transactions.all %}
+                        <tr>
+                            <td>{{ txn.txn_type }}</td>
+                            <td>{{ txn.amount|currency:order.currency }}</td>
+                            <td>{% if txn.reference %}{{ txn.reference }}{% endif %}</td>
+                            <td>{{ txn.status }}</td>
+                            <td>{{ txn.date_created }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </li>
+    {% else %}
+        <p class="help-block help-warning">
+            {% trans 'No transactions were recorded for this payment source.' %}
+            <a class="action-add modal-editor" data-url="{% url 'order_order_modeladmin_add_transaction' order.id%}?source={{source.id}}" href="#add-source-txn">Add Transaction</a>
+        </p>
+    {% endif %}
+</ul>

@@ -1,3 +1,4 @@
+
 {% extends "modeladmin/inspect.html" %}
 {% load i18n modeladmin_tags currency_filters static %}
 
@@ -138,41 +139,7 @@
                         <td>
                             {% if order.sources.exists %}
                                 {% for source in order.sources.all %}
-                                    <ul>
-                                        <li class="title">Source: <span>{{ source.source_type }}</span></li>
-                                        {% if source.reference %}<li>Reference: {{ source.reference }}</li>{% endif %}
-                                        {% if source.amount_allocated %}<li>Allocated: {{ source.amount_allocated|currency:order.currency }}</li>{% endif %}
-                                        {% if source.amount_debited %}<li>Debited: {{ source.amount_debited|currency:order.currency }}</li>{% endif %}
-                                        {% if source.amount_refunded %}<li>Refunded: {{ source.amount_refunded|currency:order.currency }}</li>{% endif %}
-                                        {% if source.transactions.exists %}
-                                            <li>
-                                                <h5>Transaction details</h5>
-                                                <table>
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Type</th>
-                                                            <th>Amount</th>
-                                                            <th>Reference</th>
-                                                            <th>Status</th>
-                                                            <th>Date</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {% for txn in source.transactions.all %}
-                                                            <tr>
-                                                                <td>{{ txn.txn_type }}</td>
-                                                                <td>{{ txn.amount|currency:order.currency }}</td>
-                                                                <td>{% if txn.reference %}{{ txn.reference }}{% endif %}</td>
-                                                                <td>{{ txn.status }}</td>
-                                                                <td>{{ txn.date_created }}</td>
-                                                            </tr>
-                                                        {% endfor %}
-                                                    </tbody>
-                                                </table>
-                                            </li>
-                                        {% else %}
-                                            <p class="help-block help-warning">{% trans 'No transactions were recorded for this payment source.' %}</p>
-                                        {% endif %}
+                                    {% include "oscar/dashboard/orders/order_payment_source.html" with order=order source=source %}
                                 {% endfor %}
                             {% else %}
                                 <p class="help-block help-warning">{% trans 'No payments were completed for this order.' %}</p>

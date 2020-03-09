@@ -13,6 +13,8 @@ from . import bankcards
 
 from modelcluster.models import ClusterableModel
 
+from wagtail.admin.edit_handlers import FieldPanel
+
 
 class AbstractTransaction(models.Model):
     """
@@ -37,12 +39,29 @@ class AbstractTransaction(models.Model):
     # these as there will be domain-specific ones that we can't anticipate
     # here.
     AUTHORIZE, DEBIT, REFUND = 'Authorize', 'Debit', 'Refund'
-    txn_type = models.CharField(_("Type"), max_length=128, blank=True)
+    TXN_TYPES = (
+        (AUTHORIZE, AUTHORIZE),
+        (DEBIT, DEBIT),
+        (REFUND, REFUND),
+    )
+    txn_type = models.CharField(
+        _("Type"), max_length=128, blank=True,
+        choices=TXN_TYPES)
 
     amount = models.DecimalField(_("Amount"), decimal_places=2, max_digits=12)
-    reference = models.CharField(_("Reference"), max_length=128, blank=True)
-    status = models.CharField(_("Status"), max_length=128, blank=True)
+    reference = models.CharField(_("Reference"), max_length=128, blank=True,
+                                 help_text=_("Check number or Transaction ID"))
+    status = models.CharField(
+        _("Status"), max_length=128, blank=True,
+        help_text=_("Status of the transaction (eg Deposited)"))
     date_created = models.DateTimeField(_("Date Created"), auto_now_add=True, db_index=True)
+
+    panels = [
+        FieldPanel('txn_type'),
+        FieldPanel('amount'),
+        FieldPanel('reference'),
+        FieldPanel('status'),
+    ]
 
     def __str__(self):
         return _("%(type)s of %(amount).2f") % {

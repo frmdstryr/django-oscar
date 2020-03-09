@@ -2,6 +2,7 @@ from decimal import Decimal as D
 from django.contrib.admin.utils import quote
 from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.shortcuts import get_object_or_404
+from django.template.loader import render_to_string
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
@@ -17,6 +18,8 @@ from wagtail.admin.modal_workflow import render_modal_workflow
 Order = get_model('order', 'Order')
 Customer = get_model(*AUTH_USER_MODEL.split('.'))
 Partner = get_model('partner', 'Partner')
+PaymentSource = get_model('payment', 'Source')
+PaymentTransaction = get_model('payment', 'Transaction')
 CommunicationEventType = get_model('customer', 'CommunicationEventType')
 
 
@@ -40,9 +43,13 @@ class OrderAdmin(DashboardAdmin):
         'dashboard.orders.views', 'OrderDetailsView')
     inspect_template_name = 'oscar/dashboard/orders/details.html'
     instance_views = DashboardAdmin.instance_views + [
-        'inspect', 'edit_billing_address', 'edit_shipping_address']
+        'inspect',
+        'edit_billing_address', 'edit_shipping_address',
+        'add_transaction',
+    ]
 
-    address_template = 'dashboard/partials/modal_editor.html'
+    modal_template = 'dashboard/partials/modal_editor.html'
+    payment_source_template = 'dashboard/orders/order_payment_source.html'
 
     # =========================================================================
     # Display fields
@@ -114,7 +121,7 @@ class OrderAdmin(DashboardAdmin):
                 'message': _('Billing address updated!')})
 
         title = _('Edit billing address')
-        return render_modal_workflow(request, self.address_template, None, {
+        return render_modal_workflow(request, self.modal_template, None, {
                 'form': form, 'request': request, 'title': title}, {
                     'step': 'edit'})
 
@@ -132,6 +139,53 @@ class OrderAdmin(DashboardAdmin):
                 'message': _('Shipping address updated!')})
 
         title = _('Edit shipping address')
-        return render_modal_workflow(request, self.address_template, None, {
+        return render_modal_workflow(request, self.modal_template, None, {
+                'form': form, 'request': request, 'title': title}, {
+                    'step': 'edit'})
+
+    # =========================================================================
+    # Transaction add views
+    # =========================================================================
+    def render_payment_source(self, order, source):
+        return render_to_string(
+            self.payment_source_template,
+            context={'order': order, 'source': source})
+
+    def get_transaction_form(self, request, source):
+        txn = PaymentTransaction(
+            source=source,
+            amount=source.balance,
+            txn_type=PaymentTransaction.DEBIT,
+        )
+        handler = ObjectList(PaymentTransaction.panels).bind_to(instance=txn)
+        Form = handler.get_form_class()
+        if request.method == 'POST':
+            return Form(request.POST, instance=txn)
+        return Form(instance=txn)
+
+    def add_transaction_view(self, request, instance_pk):
+        order = get_object_or_404(Order, pk=instance_pk)
+        source = get_object_or_404(
+            PaymentSource, pk=request.GET.get('source'), order=order)
+        form = self.get_transaction_form(request, source)
+        if request.method == 'POST' and form.is_valid():
+            txn = form.instance
+            actions = {
+                PaymentTransaction.REFUND: source.refund,
+                PaymentTransaction.DEBIT: source.debit,
+            }
+            action = actions.get(txn.txn_type)
+            if action:
+                action(txn.amount, txn.reference, txn.status)
+            else:
+                form.save()
+            html = self.render_payment_source(order, source)
+            return render_modal_workflow(request, None, None, None, {
+                'step': 'done',
+                'update': {'id': 'payment-source-%s' % source.id, 'html': html},
+                'message': _('Transaction details added!')})
+
+        title = _('Add %s transaction details' % source.source_type)
+        return render_modal_workflow(request, self.modal_template, None, {
                 'form': form, 'request': request, 'title': title}, {
                     'step': 'edit'})
