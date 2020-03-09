@@ -1,4 +1,5 @@
 from decimal import Decimal as D
+from django import forms
 from django.contrib.admin.utils import quote
 from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.shortcuts import get_object_or_404
@@ -11,7 +12,7 @@ from oscar.core.loading import get_class, get_model
 from oscar.core.compat import AUTH_USER_MODEL
 from oscar.templatetags.currency_filters import currency
 
-from wagtail.admin.edit_handlers import ObjectList
+from wagtail.admin.edit_handlers import ObjectList, FieldPanel
 from wagtail.admin.modal_workflow import render_modal_workflow
 
 
@@ -44,7 +45,9 @@ class OrderAdmin(DashboardAdmin):
     inspect_template_name = 'oscar/dashboard/orders/details.html'
     instance_views = DashboardAdmin.instance_views + [
         'inspect',
-        'edit_billing_address', 'edit_shipping_address',
+        'edit_billing_address',
+        'edit_shipping_address',
+        'edit_order_status',
         'add_transaction',
     ]
 
@@ -96,6 +99,37 @@ class OrderAdmin(DashboardAdmin):
             return queryset
         partners = Partner._default_manager.filter(users=request.user)
         return queryset.filter(lines__partner__in=partners).distinct()
+
+    # =========================================================================
+    # Address edit views
+    # =========================================================================
+    def get_order_status_form(self, request, order):
+        class StatusForm(forms.Form):
+            status = forms.ChoiceField(
+                label="Status",
+                required=True,
+                choices=[(it, it) for it in order.available_statuses()])
+        if request.method == 'POST':
+            return StatusForm(request.POST)
+        return StatusForm()
+
+
+    def edit_order_status_view(self, request, instance_pk):
+        order = get_object_or_404(Order, pk=instance_pk)
+        form = self.get_order_status_form(request, order)
+        if request.method == 'POST' and form.is_valid():
+            status = form.cleaned_data['status']
+            order.set_status(status)
+            return render_modal_workflow(request, None, None, None, {
+                'step': 'done',
+                'update': {'id': 'order-status', 'html': order.status},
+                'message': _('Order status updated!')})
+
+        title = _('Edit order status')
+        return render_modal_workflow(request, self.modal_template, None, {
+                'form': form, 'request': request, 'title': title}, {
+                    'step': 'edit'})
+
 
     # =========================================================================
     # Address edit views

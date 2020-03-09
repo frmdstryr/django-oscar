@@ -32,7 +32,10 @@
                     </tr>
                     <tr class="even">
                         <td>{% trans 'Order Status' %}</td>
-                        <td>{{ order.status|default:"N/A" }}</td>
+                        <td>
+                            <span id="order-status">{{ order.status|default:"N/A" }}</span>
+                            <a class="action-edit modal-editor" data-url="{% url 'order_order_modeladmin_edit_order_status' order.id %}" href="#edit-order-status">Change</a>
+                        </td>
                     </tr>
                 </tbody>
             </table>
