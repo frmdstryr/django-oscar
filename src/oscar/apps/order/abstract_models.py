@@ -123,6 +123,9 @@ class AbstractOrder(ClusterableModel):
     #: status
     cascade = getattr(settings, 'OSCAR_ORDER_STATUS_CASCADE', {})
 
+    #: Maps a progress to a status value
+    pipeline_progress = getattr(settings, 'OSCAR_ORDER_STATUS_PROGRESS', {})
+
     def __init__(self, *args, **kwargs):
         """ Save the initial status to detect a change on save
 
@@ -171,6 +174,15 @@ class AbstractOrder(ClusterableModel):
         self.save()
 
     set_status.alters_data = True
+
+    @property
+    def progress(self):
+        """ Get the order progress from 0 to 100 """
+        try:
+            p = int(self.pipeline_progress.get(self.status, 30))
+            return min(100, max(0, p))
+        except:
+            return 100
 
     def _create_order_status_change(self, old_status, new_status):
         # Not setting the status on the order as that should be handled before
