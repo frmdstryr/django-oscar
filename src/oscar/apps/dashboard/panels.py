@@ -110,10 +110,11 @@ class RecentOrdersChart(OrdersMixin, DashboardPanel):
     def get_context(self):
         ctx = super().get_context()
         orders = self.get_queryset()
-        ctx.update(self.get_hourly_report(orders))
+        ctx.update(self.get_chart_data(orders))
         return ctx
 
-    def get_hourly_report(self, orders, hours=24, segments=10):
+
+    def get_chart_data(self, orders, segments=14):
         """
         Get report of order revenue split up in hourly chunks. A report is
         generated for the last *hours* (default=24) from the current time.
@@ -123,25 +124,24 @@ class RecentOrdersChart(OrdersMixin, DashboardPanel):
         *segments* defines the number of labeling segments used for the y-axis
         when generating the y-axis labels (default=10).
         """
-        # Get datetime for 24 hours ago
         time_now = timezone.now().replace(minute=0, second=0)
-        start_time = time_now - timedelta(hours=hours - 1)
+        start_time = time_now - timedelta(days=segments)
 
-        order_total_hourly = []
-        for hour in range(0, hours, 2):
-            end_time = start_time + timedelta(hours=2)
-            hourly_orders = orders.filter(date_placed__gte=start_time,
+        order_total_daily = []
+        for i in range(0, segments):
+            end_time = start_time + timedelta(days=1)
+            daily_orders = orders.filter(date_placed__gte=start_time,
                                           date_placed__lt=end_time)
-            total = hourly_orders.aggregate(
-                Sum('total_incl_tax')
-            )['total_incl_tax__sum'] or D('0.0')
-            order_total_hourly.append({
+            total = daily_orders.aggregate(
+                Sum('total_incl_tax'))['total_incl_tax__sum'] or D('0.0')
+            order_total_daily.append({
                 'end_time': end_time,
-                'total_incl_tax': total
+                'total_incl_tax': total,
+                #'count': daily_orders.count(),
             })
             start_time = end_time
 
-        max_value = max([x['total_incl_tax'] for x in order_total_hourly])
+        max_value = max([x['total_incl_tax'] for x in order_total_daily])
         divisor = 1
         while divisor < max_value / 50:
             divisor *= 10
@@ -149,7 +149,7 @@ class RecentOrdersChart(OrdersMixin, DashboardPanel):
         max_value *= divisor
         if max_value:
             segment_size = (max_value) / D('100.0')
-            for item in order_total_hourly:
+            for item in order_total_daily:
                 item['percentage'] = int(item['total_incl_tax'] / segment_size)
 
             y_range = []
@@ -158,29 +158,49 @@ class RecentOrdersChart(OrdersMixin, DashboardPanel):
                 y_range.append(idx * y_axis_steps)
         else:
             y_range = []
-            for item in order_total_hourly:
+            for item in order_total_daily:
                 item['percentage'] = 0
-        data = [
-            {
-                'x': [str(i['end_time']) for i in order_total_hourly],
-                'y': [str(i['total_incl_tax']) for i in order_total_hourly],
-                'base': 0,
-                'name': 'Order totals (Hourly)',
-                'type': 'bar',
-            }
-        ]
-        #ctx = {
-        #    'order_total_hourly': order_total_hourly,
-        #    'max_revenue': max_value,
-        #    'y_range': y_range,
-        #}
-        layout = {'yaxis': {'ymin': 0}}
-        ctx = {
-            'series': json.dumps(data),
-            'layout': json.dumps(layout)
+        data = {
+            'labels': [d['end_time'].strftime("%b %d") for d in order_total_daily],
+            'datasets': [
+                {
+                    'label': 'Order Totals',
+                    'backgroundColor': 'rgba(75, 192, 192, 0.2)',
+                    'borderColor': 'rgba(75, 192, 192, 1)',
+                    'borderWidth': 1,
+                    'data': [float(d['total_incl_tax']) for d in order_total_daily],
+                },
+                #{
+                    #'label': 'Number of Orders',
+                    #'backgroundColor': 'rgba(75, 192, 192, 0.2)',
+                    #'borderColor': 'rgb(75, 192, 192)',
+                    #'borderWidth': 1,
+                    #'data': [d['count'] for d in order_total_daily],
+                #}
+            ]
         }
 
-        return ctx
+        # Chart.js
+        chart = {
+            'type': 'bar',
+            'data': data,
+            'options': {
+                'scales': {
+                    'yAxes': [{
+                        'ticks': {
+                            'beginAtZero': True
+                        }
+                    }],
+                    #'xAxes': [{
+                        #'type': 'time',
+                        #'time': {
+                            #'unit': 'day'
+                        #}
+                    #}]
+                }
+            },
+        }
+        return {'chart': json.dumps(chart)}
 
 
 class LastOrdersList(OrdersMixin, DashboardList):

@@ -206,6 +206,11 @@ class AbstractVisitor(models.Model):
 
     objects = VisitorManager()
 
+    # If the user agenet contains any of these consider it to be a bot
+    bot_patterns = getattr(
+        settings, 'OSCAR_USER_AGENT_BOT_PATTERNS',
+        ('bot', 'python', 'headless', 'crawl', 'spider', 'facebook'))
+
     def session_expired(self):
         """The session has ended due to session expiration."""
         if self.expiry_time:
@@ -257,7 +262,7 @@ class AbstractVisitor(models.Model):
         if self.user_agent is None:
             return True
         user_agent = self.user_agent.lower()
-        for pattern in ('bot', 'python', 'headless', 'crawl'):
+        for pattern in self.bot_patterns:
             if pattern in user_agent:
                 return True
         return False

@@ -1,7 +1,7 @@
 {% load static %}
 <div class="dashboard-chart {{ classnames }}">
     <h2>{{ title }}</h2>
-    <div class="plotly-chart" data-series="{{series}}" data-layout="{{layout}}"></div>
-    <script src="{% static 'oscar/js/plotly/plotly-latest.min.js' %}"></script>
-    <script src="{% static 'oscar/js/oscar/plotly.js' %}"></script>
+    <div class="js-chart" data-chart="{{chart}}">
+        <canvas></canvas>
+    </div>
 </div>

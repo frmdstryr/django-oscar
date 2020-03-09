@@ -3,8 +3,9 @@
 
 {% block js %}
     {{ block.super }}
-    <script src="{% static 'oscar/js/plotly/plotly-latest.min.js' %}"></script>
-    <script src="{% static 'oscar/js/oscar/plotly.js' %}"></script>
+    <script src="{% static 'oscar/js/momentjs/moment.min.js' %}"></script>
+    <script src="{% static 'oscar/js/chartsjs/chart.min.js' %}"></script>
+    <script src="{% static 'oscar/js/oscar/dashboard-chart.js' %}"></script>
 {% endblock %}
 
 {% block branding_welcome %}{{site_name}}{% endblock %}
