@@ -200,6 +200,13 @@ class AbstractOrder(ClusterableModel):
         return self.user is None and bool(self.guest_email)
 
     @property
+    def contact_number(self):
+        if self.shipping_address and self.shipping_address.phone_number:
+            return self.shipping_address.phone_number
+        elif self.user:
+            return self.user.phone_number
+
+    @property
     def basket_total_before_discounts_incl_tax(self):
         """
         Return basket total including tax but before discounts are applied

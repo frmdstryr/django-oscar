@@ -132,8 +132,15 @@ class AbstractUser(ClusterableModel,
         return self.get_full_name()
 
     def get_full_name(self):
-        full_name = '%s %s' % (self.first_name, self.last_name)
-        return full_name.strip()
+        full_name = ('%s %s' % (self.first_name, self.last_name)).strip()
+        if not full_name:
+            order = self.last_order
+            if order is not None:
+                if order.billing_address:
+                    full_name = order.billing_address.name.strip()
+                elif order.shipping_address:
+                    full_name = order.shipping_address.name.strip()
+        return full_name
 
     def get_short_name(self):
         return self.first_name
@@ -149,6 +156,15 @@ class AbstractUser(ClusterableModel,
     @cached_property
     def default_billing_address(self):
         return self.addresses.filter(is_default_for_billing=True).first()
+
+    @cached_property
+    def phone_number(self):
+        addr = self.addresses.exclude(phone_number__exact="").first()
+        if addr is not None and addr.phone_number:
+            return addr.phone_number
+        order = self.last_order
+        if order and order.shipping_address:
+            return order.shipping_address.phone_number
 
     def _migrate_alerts_to_user(self):
         """

@@ -59,6 +59,10 @@
                             <a href="mailto:{{orer.email}}">{{order.email}}</a>
                         </td>
                     </tr>
+                    <tr class="odd">
+                        <td>{% trans 'Phone number' %}</td>
+                        <td>{% if order.contact_number %}{{order.contact_number}}{% endif %}</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
