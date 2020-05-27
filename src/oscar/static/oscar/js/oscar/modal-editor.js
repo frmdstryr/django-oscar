@@ -19,10 +19,13 @@ $(document).ready(function() {
                     if (data.message) {
                         addMessage('error', data.message);
                     }
-                    $('form', modal.body).on('submit', function(e) {
-                        modal.postForm(this.action, $(this).serialize());
-                        return false;
-                    });
+
+                    if (data.ajax !== false) {
+                        $('form', modal.body).on('submit', function(e) {
+                            modal.postForm(this.action, $(this).serialize());
+                            return false;
+                        });
+                    }
                 },
                 done: function(modal, data) {
                     if (data.message) {
