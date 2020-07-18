@@ -244,7 +244,7 @@ class AbstractVisitor(models.Model):
         except Exception:
             msg = 'Error getting GeoIP data for IP "{0}"'.format(
                 self.ip_address)
-            log.exception(msg)
+            log.debug(msg)
 
     @cached_property
     def ua_data(self):
@@ -255,7 +255,7 @@ class AbstractVisitor(models.Model):
             return ua_data
         except Exception:
             msg = 'Error parsing UA string "%s"' % self.user_agent
-            log.exception(msg)
+            log.debug(msg)
 
     def detect_bot(self):
         """ Attempt to determine if this visitor is a bot """

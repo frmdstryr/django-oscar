@@ -130,12 +130,21 @@ class AbstractCategory(Page):
     #: this avoids fetching a lot of unneeded extra data from the database.
     COMPARISON_FIELDS = ('pk', 'path', 'depth')
     description = RichTextField(_('Description'), blank=True)
+
     image = models.ForeignKey(
         'images.OscarImage',
         blank=True, null=True,
         on_delete=models.SET_NULL,
         related_name='categories',
         verbose_name=_("Image"))
+
+    banner_image = models.ForeignKey(
+        'images.OscarImage',
+        blank=True, null=True,
+        on_delete=models.SET_NULL,
+        related_name='+',
+        verbose_name=_("Banner Image"))
+
 
     _slug_separator = '/'
     _full_name_separator = ' > '
@@ -247,6 +256,7 @@ class AbstractCategory(Page):
         FieldPanel('description', classname='full'),
         FieldPanel('is_enabled'),
         ImageChooserPanel('image'),
+        ImageChooserPanel('banner_image'),
     ]
     product_panels = [
         InlinePanel('products_set', label=_('Products')),
