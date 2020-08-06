@@ -44,7 +44,7 @@ class FacetMunger(object):
         clean_data[key] = {'name': facet['name'], 'results': []}
         url_param = settings.OSCAR_SEARCH_FACETS_QUERY_PARAM
         for field_value, count in self.facet_counts['fields'][key]:
-            field_name = '%s_exact' % facet['field']
+            field_name = '%s' % facet['field']
             is_faceted_already = field_name in self.selected_facets
             datum = {
                 'name': field_value,
@@ -83,7 +83,7 @@ class FacetMunger(object):
         # Loop over the queries in OSCAR_SEARCH_FACETS rather than the returned
         # facet information from the search backend.
         for field_value, query in facet['queries']:
-            field_name = '%s_exact' % facet['field']
+            field_name = '%s' % facet['field']
             is_faceted_already = field_name in self.selected_facets
 
             match = '%s:%s' % (field_name, query)

@@ -96,7 +96,7 @@ class TestFacetMunger(TestCase):
 
     def test_with_price_facets_selected(self):
         munger = facets.FacetMunger(
-            path='/search?q=test&selected_facets=price_exact%3A%5B20+TO+40%5D',
+            path='/search?q=test&f=price_exact%3A%5B20+TO+40%5D',
             selected_multi_facets={'price_exact': ['[20 TO 40]']},
             facet_counts=FACET_COUNTS_WITH_PRICE_RANGE_SELECTED)
         data = munger.facet_data()

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.paginator import InvalidPage, Paginator
 from django.utils.translation import gettext_lazy as _
 from haystack import connections
@@ -67,9 +68,10 @@ class SearchHandler(object):
         """
         Return a bound version of Haystack's search form.
         """
+        url_param = settings.OSCAR_SEARCH_FACETS_QUERY_PARAM
         kwargs = {
             'data': request_data,
-            'selected_facets': request_data.getlist("selected_facets"),
+            'selected_facets': request_data.getlist(url_param),
             'searchqueryset': search_queryset
         }
         kwargs.update(**form_kwargs)
@@ -196,6 +198,7 @@ class SearchHandler(object):
         munger = self.get_facet_munger()
         facet_data = munger.facet_data()
         has_facets = any([data['results'] for data in facet_data.values()])
+        url_param = settings.OSCAR_SEARCH_FACETS_QUERY_PARAM
 
         context = {
             'facet_data': facet_data,
@@ -204,7 +207,7 @@ class SearchHandler(object):
             # facets data to the view again, and the template adds those
             # as fields to the form. This hack ensures that facets stay
             # selected when changing relevancy.
-            'selected_facets': self.request_data.getlist('selected_facets'),
+            'selected_facets': self.request_data.getlist(url_param),
             'form': self.search_form,
             'paginator': self.paginator,
             'page_obj': self.page,
