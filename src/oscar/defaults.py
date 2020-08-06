@@ -245,11 +245,12 @@ OSCAR_DASHBOARD_NAVIGATION = [
 OSCAR_DASHBOARD_DEFAULT_ACCESS_FUNCTION = 'oscar.apps.dashboard.nav.default_access_fn'  # noqa
 
 # Search facets
+OSCAR_SEARCH_FACETS_QUERY_PARAM = 'selected_facets'
 OSCAR_SEARCH_FACETS = {
     'fields': OrderedDict([
         # The key for these dicts will be used when passing facet data
         # to the template. Same for the 'queries' dict below.
-        ('product_class', {'name': _('Type'), 'field': 'productNone_class'}),
+        ('product_class', {'name': _('Type'), 'field': 'product_class'}),
         ('rating', {'name': _('Rating'), 'field': 'rating'}),
         # You can specify an 'options' element that will be passed to the
         # SearchQuerySet.facet() call.
