@@ -278,7 +278,7 @@ class BasketAddView(FormView):
             form.cleaned_options())
 
         messages.success(self.request, self.get_success_message(form),
-                         extra_tags='safe noicon')
+                         extra_tags='safe')
 
         # Check for additional offer messages
         BasketMessageGenerator().apply_messages(self.request, offers_before)
@@ -454,7 +454,7 @@ class SavedView(ModelFormSetView):
                 msg = render_to_string(
                     'basket/messages/line_restored.html',
                     {'line': form.instance})
-                messages.info(self.request, msg, extra_tags='safe noicon')
+                messages.info(self.request, msg, extra_tags='safe')
                 real_basket = self.request.basket
                 real_basket.merge_line(form.instance)
 

@@ -30,7 +30,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='lineattribute',
             name='value_boolean',
-            field=models.NullBooleanField(verbose_name='Boolean'),
+            field=models.BooleanField(verbose_name='Boolean', null=True),
         ),
         migrations.AddField(
             model_name='lineattribute',

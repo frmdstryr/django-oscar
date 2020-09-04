@@ -63,7 +63,7 @@ class BasketMessageGenerator(object):
         offers_after = request.basket.applied_offers()
 
         for level, msg in self.get_messages(request.basket, offers_before, offers_after):
-            messages.add_message(request, level, msg, extra_tags='safe noicon')
+            messages.add_message(request, level, msg, extra_tags='safe')
 
 
 class LineOfferConsumer(object):

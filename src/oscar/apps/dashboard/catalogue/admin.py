@@ -1,6 +1,6 @@
 from django.conf.urls import url
 from django.contrib import messages
-from django.contrib.staticfiles.templatetags.staticfiles import static
+from django.templatetags.static import static
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse
 from django.utils.html import format_html

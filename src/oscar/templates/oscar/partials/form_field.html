@@ -8,13 +8,12 @@
         Make the field widget type available to templates so we can mark-up
         checkboxes differently to other widgets.
     {% endcomment %}
-    {% annotate_form_field field %}
 
     {% block control_group %}
         <div class="form-group {% if field.errors %}has-error{% endif %}">
 
             {% block label %}
-                {% if not nolabel and field.widget_type != 'CheckboxInput' %}
+                {% if not nolabel and field.widget_type != 'checkbox' %}
                     <label for="{{ field.auto_id }}" class="{% if style|default:"stacked" != 'stacked' %}col-sm-4{% endif%} control-label{% if field.field.required %} required{% endif %}">
                         {{ field.label|safe }}
                     </label>
@@ -24,7 +23,7 @@
             {% block controls %}
                 <div class="{% if style|default:"stacked" != 'stacked' %}col-sm-7{% endif %}">
                     {% block widget %}
-                        {% if field.widget_type == 'CheckboxInput' %}
+                        {% if field.widget_type == 'checkbox' %}
                             <label for="{{ field.auto_id }}" class="checkbox {% if field.field.required %}required{% endif %}">
                                 {{ field.label|safe }}
                                 {% render_field field class+="form-control" %}

@@ -123,7 +123,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('value_text', models.TextField(blank=True, verbose_name='Text', null=True)),
                 ('value_integer', models.IntegerField(blank=True, verbose_name='Integer', null=True)),
-                ('value_boolean', models.NullBooleanField(verbose_name='Boolean')),
+                ('value_boolean', models.BooleanField(verbose_name='Boolean', null=True)),
                 ('value_float', models.FloatField(blank=True, verbose_name='Float', null=True)),
                 ('value_richtext', models.TextField(blank=True, verbose_name='Richtext', null=True)),
                 ('value_date', models.DateField(blank=True, verbose_name='Date', null=True)),

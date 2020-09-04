@@ -1,7 +1,7 @@
 from decimal import Decimal as D
 from django import forms
 from django.contrib.admin.utils import quote
-from django.contrib.staticfiles.templatetags.staticfiles import static
+from django.templatetags.static import static
 from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
 from django.utils.html import format_html
