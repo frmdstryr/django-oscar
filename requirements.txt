@@ -31,6 +31,6 @@ ipython==7.6.1
 pycountry==18.5.26
 
 # Wagtail
-wagtail>=2.4
-wagtail-autocomplete==0.1.1
+wagtail>=2.10
+wagtail-autocomplete==0.6
 #wagtailmodelchooser==2.0.0  # now under oscar.vendor.modelchooser

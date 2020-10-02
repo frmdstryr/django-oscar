@@ -86,7 +86,7 @@ class ContentGroup(DashboardAdminGroup):
 
 
 class ReportsGroup(DashboardAdminGroup):
-    menu_label = _('Reports')
+    menu_label = _('Analytics')
     menu_icon = 'bar-chart'
     menu_order = 700
     @property
