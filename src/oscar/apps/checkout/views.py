@@ -8,6 +8,7 @@ from django.shortcuts import redirect
 from django.urls import reverse, reverse_lazy
 from django.utils.http import urlquote
 from django.utils.translation import gettext as _
+from django.utils.functional import cached_property
 from django.views import generic
 
 from oscar.core.loading import get_class, get_classes, get_model
@@ -263,6 +264,12 @@ class ShippingMethodView(CheckoutSessionMixin, generic.FormView):
     success_url = reverse_lazy('checkout:payment-method')
     auto_select_method = True
 
+    @cached_property
+    def _shipping_address(self):
+        shipping_addr = self.get_shipping_address(self.request.basket)
+        shipping_addr._update_lat_and_lng()
+        return shipping_addr
+
     def post(self, request, *args, **kwargs):
         self._methods = self.get_available_shipping_methods()
         return super().post(request, *args, **kwargs)
@@ -306,6 +313,7 @@ class ShippingMethodView(CheckoutSessionMixin, generic.FormView):
     def get_context_data(self, **kwargs):
         kwargs = super().get_context_data(**kwargs)
         kwargs['methods'] = self._methods
+        kwargs['shipping_address'] = self._shipping_address
         return kwargs
 
     def get_form_kwargs(self):
@@ -323,7 +331,7 @@ class ShippingMethodView(CheckoutSessionMixin, generic.FormView):
         # system.
         return ShippingRepository().get_shipping_methods(
             basket=self.request.basket, user=self.request.user,
-            shipping_addr=self.get_shipping_address(self.request.basket),
+            shipping_addr=self._shipping_address,
             request=self.request)
 
     def form_valid(self, form):

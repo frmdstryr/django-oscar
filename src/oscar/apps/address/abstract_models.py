@@ -1,11 +1,13 @@
 import re
 import zlib
+import logging
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
+from django.utils.module_loading import import_string
 from phonenumber_field.modelfields import PhoneNumberField
 
 from oscar.core.compat import AUTH_USER_MODEL
@@ -19,6 +21,9 @@ from wagtail.core.models import Orderable
 from modelcluster.fields import ParentalKey
 
 
+log = logging.getLogger('oscar')
+
+
 class AbstractAddress(Orderable):
     """
     Superclass address object
@@ -26,6 +31,7 @@ class AbstractAddress(Orderable):
     This is subclassed and extended to provide models for
     user, shipping and billing addresses.
     """
+
     MR, MISS, MRS, MS, DR = ('Mr', 'Miss', 'Mrs', 'Ms', 'Dr')
     TITLE_CHOICES = (
         (MR, _("Mr")),
@@ -242,6 +248,13 @@ class AbstractAddress(Orderable):
         on_delete=models.CASCADE,
         verbose_name=_("Country"))
 
+    # GPS Coordinates
+    lat = models.FloatField(
+        default=0, blank=True,
+        help_text='Set to 0 to look up the lat, lng using geocoding. '
+                  'If the address is not found the zipcode will be used.')
+    lng = models.FloatField(default=0, blank=True)
+
     #: A field only used for searching addresses - this contains all the
     #: relevant fields.  This is effectively a poor man's Solr text field.
     search_text = models.TextField(
@@ -262,6 +275,8 @@ class AbstractAddress(Orderable):
         FieldPanel('state'),
         FieldPanel('postcode'),
         FieldPanel('country'),
+        FieldPanel('lat'),
+        FieldPanel('lng'),
     ]
 
     def __str__(self):
@@ -272,10 +287,11 @@ class AbstractAddress(Orderable):
         verbose_name = _('Address')
         verbose_name_plural = _('Addresses')
 
-    # Saving
-
     def save(self, *args, **kwargs):
+        """ Lookup the lat / lng on save
+        """
         self._update_search_text()
+        self._update_lat_and_lng()
         super().save(*args, **kwargs)
 
     def clean(self):
@@ -319,6 +335,18 @@ class AbstractAddress(Orderable):
                    self.line1, self.line2, self.line3, self.line4,
                    self.state, self.postcode, self.country.name])
         self.search_text = ' '.join(search_fields)
+
+    def _update_lat_and_lng(self):
+        if self.lat and self.lng:
+            return
+        try:
+            geocoder = import_string(settings.OSCAR_GEOCODER_FUNCTION)
+            location = geocoder(self)
+            if location is not None:
+                self.lat = location.latitude
+                self.lng = location.longitude
+        except Exception as e:
+            log.error(e)
 
     # Properties
     @property

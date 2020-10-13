@@ -29,3 +29,27 @@ def shipping_charge_excl_discount(method, basket):
     context.
     """
     return method.calculate_excl_discount(basket)
+
+
+@register.simple_tag
+def shipping_distance(method, address):
+    """
+    Template tag for getting options nearby the provided address.
+    """
+    return method.distance(address)
+
+
+@register.simple_tag
+def shipping_miles(distance):
+    """
+    Convert km to miles and round it
+    """
+    if not isinstance(distance, float):
+        print(distance)
+        return ''
+    d = distance * 0.6213712
+    if d < 5:
+        return "less than 5"
+    if d > 100:
+        return 10 * round(d/10)
+    return 5 * round(d/5)

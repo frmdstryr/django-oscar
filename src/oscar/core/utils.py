@@ -185,3 +185,15 @@ def round_half_up(money):
     Decimal('1.01')
     """
     return money.quantize(decimal.Decimal('0.01'), decimal.ROUND_HALF_UP)
+
+
+def geocoder(address):
+    """
+    Find lat and lng for an address model. This is the default which disables
+    gecoding. Use OSCAR_GEOCODER_FUNCTION setting to change it.
+    Must return an object with latitude and longitude attributes or None.
+
+    """
+    log = logging.getLogger('oscar.geocoder')
+    log.warning("Geocoder is not implemented")
+    return None

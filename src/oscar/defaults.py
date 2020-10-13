@@ -311,3 +311,9 @@ TRACK_REFERER = True
 TRACK_QUERY_STRING = True
 
 GEOIP_CACHE_TYPE = 4
+
+# Custom manager for addresses
+OSCAR_ADDRESS_MANAGER = 'django.db.models.Manager'
+
+# Used to lookup lat and lng of an address
+OSCAR_GEOCODER_FUNCTION = 'oscar.core.utils.geocoder'
