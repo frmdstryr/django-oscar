@@ -97,7 +97,7 @@ class OrdersMixin:
                            order.currency, order.total_incl_tax)
 
     def render_order_link(self, order):
-        url = self.model_admin.get_action_url('view', instance_pk=order.pk)
+        url = self.model_admin.get_action_url('inspect', instance_pk=order.pk)
         return format_html('<a href="{}">{}</a>', url, order)
 
 
@@ -112,7 +112,6 @@ class RecentOrdersChart(OrdersMixin, DashboardPanel):
         orders = self.get_queryset()
         ctx.update(self.get_chart_data(orders))
         return ctx
-
 
     def get_chart_data(self, orders, segments=14):
         """
