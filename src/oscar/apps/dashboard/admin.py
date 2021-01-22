@@ -6,7 +6,7 @@ from .base import DashboardAdminGroup
 
 class CatalogueGroup(DashboardAdminGroup):
     menu_label = _('Catalogue')
-    menu_icon = 'sitemap'
+    menu_icon = 'tree'
     menu_order = 200  # will put in 3rd place (000 being 1st, 100 2nd)
 
     @property
@@ -23,7 +23,7 @@ class CatalogueGroup(DashboardAdminGroup):
 
 class FulfillmentGroup(DashboardAdminGroup):
     menu_label = _('Fullfillment')
-    menu_icon = 'shopping-cart'
+    menu_icon = 'cart'
     menu_order = 300
 
     @property
@@ -51,7 +51,7 @@ class CustomersGroup(DashboardAdminGroup):
 
 class OffersGroup(DashboardAdminGroup):
     menu_label = _('Offers')
-    menu_icon = 'tags'
+    menu_icon = 'price-tag'
     menu_order = 500
 
     @property
@@ -87,7 +87,7 @@ class ContentGroup(DashboardAdminGroup):
 
 class ReportsGroup(DashboardAdminGroup):
     menu_label = _('Analytics')
-    menu_icon = 'bar-chart'
+    menu_icon = 'pie-chart'
     menu_order = 700
     @property
     def items(self):
@@ -114,6 +114,9 @@ class DashboardSite:
 
     # List of all model admins
     model_admins = []
+
+    # Icon search paths
+    icon_dirs = ['dashboard/icons']
 
     @classmethod
     def instance(cls):

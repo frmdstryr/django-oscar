@@ -81,7 +81,7 @@ class ProductClassAdmin(DashboardAdmin):
     model = ProductClass
     menu_label = _('Product types')
     dashboard_url = 'product-types'
-    menu_icon = 'cube'
+    menu_icon = 'book'
     list_display = ('name', 'requires_shipping', 'track_stock')
     list_filter = ('name', 'requires_shipping', 'track_stock')
     search_fields = ('name', )
@@ -101,7 +101,7 @@ class ProductAdmin(DashboardAdmin, ThumbnailMixin):
     model = Product
     menu_label = _('Products')
     add_label = _('Add a new Product')
-    menu_icon = 'cubes'
+    menu_icon = 'books'
     dashboard_url = 'products'
     list_display = (
         'id', 'admin_thumb', 'title', 'product_class', 'inventory', 'sku_map',
