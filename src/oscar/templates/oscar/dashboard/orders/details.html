@@ -61,7 +61,11 @@
                     </tr>
                     <tr class="odd">
                         <td>{% trans 'Phone number' %}</td>
-                        <td>{% if order.contact_number %}{{order.contact_number}}{% endif %}</td>
+                        <td>{% if order.contact_number %}
+                            <a href="tel:{{order.contact_number}}">{{order.contact_number}}</a>
+                        {% endif %}
+
+                        </td>
                     </tr>
                 </tbody>
             </table>

@@ -31,7 +31,7 @@ class OrderAdmin(DashboardAdmin):
     dashboard_url = 'orders'
     restricted_actions = ['edit', 'delete']
     list_display = ('number', 'status', 'num_items', 'order_total',
-                    'paid_in_full', 'bill_to', 'ship_to', 'date_placed')
+                    'paid_in_full', 'ship_to', 'date_placed')
     list_filter = ('date_placed', 'status')
     search_fields = (
         'number',
