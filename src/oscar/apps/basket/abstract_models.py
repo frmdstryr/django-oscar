@@ -964,6 +964,7 @@ class AbstractLineAttribute(models.Model):
     value_datetime = models.DateTimeField(_('DateTime'), blank=True, null=True)
     value_multi_option = models.ManyToManyField(
         'catalogue.AddToCartOption', blank=True,
+        through='basket.LineAttributeAddToCartOption',
         related_name='multi_valued_line_attribute_values',
         verbose_name=_("Value multi option"))
     value_option = models.ForeignKey(
@@ -1082,3 +1083,15 @@ class AbstractLineAttribute(models.Model):
         app_label = 'basket'
         verbose_name = _('Line attribute')
         verbose_name_plural = _('Line attributes')
+
+
+class AbstractLineAttributeAddToCartOption(models.Model):
+    option = models.ForeignKey(
+        'catalogue.AddToCartOption', on_delete=models.PROTECT)
+    line_item = models.ForeignKey(
+        'basket.LineAttribute', on_delete=models.CASCADE)
+
+    class Meta:
+        abstract = True
+        app_label = 'basket'
+        verbose_name = _('Line attribute option')

@@ -1,5 +1,6 @@
 from oscar.apps.basket.abstract_models import (
-    AbstractBasket, AbstractLine, AbstractLineAttribute)
+    AbstractBasket, AbstractLine, AbstractLineAttribute,
+    AbstractLineAttributeAddToCartOption)
 from oscar.core.loading import is_model_registered
 
 __all__ = [
@@ -30,3 +31,11 @@ if not is_model_registered('basket', 'LineAttribute'):
         pass
 
     __all__.append('LineAttribute')
+
+
+
+if not is_model_registered('basket', 'LineAttributeAddToCartOption'):
+    class LineAttributeAddToCartOption(AbstractLineAttributeAddToCartOption):
+        pass
+
+    __all__.append('LineAttributeAddToCartOption')
